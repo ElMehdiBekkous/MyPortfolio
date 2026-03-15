@@ -3,6 +3,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import styled, { keyframes } from 'styled-components';
 import { useLanguage } from '@/context/LanguageContext';
+import useIsMobile from '@/lib/useIsMobile';
 import { FiArrowDown, FiGithub, FiLinkedin, FiTwitter, FiDribbble } from 'react-icons/fi';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -138,6 +139,19 @@ const GradientMesh = styled.div`
   filter: blur(${({ $blur }) => $blur || '100px'});
   opacity: ${({ $opacity }) => $opacity || '0.25'};
   animation: ${morphBlob} ${({ $speed }) => $speed || '15s'} ease-in-out infinite;
+
+  @media (max-width: 768px) {
+    animation: none; /* Disable morphBlob on mobile — saves continuous GPU transforms */
+    border-radius: 50%;
+    width: ${({ $size }) => {
+      const val = parseInt($size) || 500;
+      return `${Math.floor(val * 0.5)}px`;
+    }};
+    height: ${({ $size }) => {
+      const val = parseInt($size) || 500;
+      return `${Math.floor(val * 0.5)}px`;
+    }};
+  }
 `;
 
 const ParticleCanvas = styled.canvas`
@@ -433,6 +447,7 @@ const AvatarWrapper = styled.div`
   @media (max-width: ${({ theme }) => theme.breakpoints.sm}) {
     width: 250px;
     height: 310px;
+    animation: none; /* Disable float animation on mobile for GPU savings */
   }
 `;
 
@@ -444,6 +459,12 @@ const AvatarGlow = styled.div`
   opacity: 0.15;
   filter: blur(40px);
   animation: ${glow} 3s ease-in-out infinite;
+
+  @media (max-width: 768px) {
+    animation: none; /* Disable glow box-shadow animation on mobile */
+    filter: blur(25px); /* Lighter blur */
+    opacity: 0.1;
+  }
 `;
 
 const AvatarFrame = styled.canvas`
@@ -505,9 +526,10 @@ const SkillBarsContainer = styled.div`
     width: 90%;
     inset-inline-end: 5%;
     inset-inline-start: 5%;
-    padding-top: 60vh; /* Keep pushed down below avatar on mobile */
+    padding-top: 15vh; /* Even closer to avatar */
     align-content: flex-start;
-    justify-content: center;
+    justify-content: space-between; /* Two tight columns */
+    gap: 0.5rem; /* Smaller gap on mobile */
   }
 `;
 
@@ -576,6 +598,11 @@ const OrbitRing = styled.div`
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
+
+  @media (max-width: 768px) {
+    animation: none; /* Disable spin animation on mobile */
+    display: none; /* Hide entirely on mobile */
+  }
 `;
 
 const OrbitDot = styled.div`
@@ -589,6 +616,10 @@ const OrbitDot = styled.div`
   inset-inline-end: ${({ $right }) => $right};
   bottom: ${({ $bottom }) => $bottom};
   box-shadow: 0 0 15px ${({ $color }) => $color}88;
+
+  @media (max-width: 768px) {
+    box-shadow: none; /* Remove box-shadow on mobile */
+  }
 `;
 
 /* ── Orbit ring ── */
@@ -645,6 +676,7 @@ const ScrollText = styled.span`
 
 export default function Hero() {
   const { t, isRTL } = useLanguage();
+  const isMobile = useIsMobile();
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0 });
   const avatarRef = useRef(null);
@@ -684,6 +716,8 @@ export default function Hero() {
 
   /* ── Preload all frames ── */
   useEffect(() => {
+    if (isMobile === undefined) return;
+
     const allFrames = [
       ...idleFrames.current,
       ...scrollFrames.current,
@@ -704,7 +738,7 @@ export default function Hero() {
       img.src = src;
       preloadedImages.current[src] = img;
     });
-  }, []);
+  }, [isMobile]);
 
   /* ── Draw Frame Helper ── */
   const drawFrame = useCallback((src) => {
@@ -756,25 +790,29 @@ export default function Hero() {
 
   /* ── Start idle loop once frames are loaded ── */
   useEffect(() => {
+    if (isMobile === undefined) return;
     if (framesLoaded) {
       animState.current = 'idle';
       startLoop(idleFrames.current, IDLE_FPS);
     }
     return () => stopLoop();
-  }, [framesLoaded, startLoop, stopLoop]);
+  }, [framesLoaded, startLoop, stopLoop, isMobile]);
 
   /* ── GSAP ScrollTrigger — pin hero & scrub avatar frames ── */
   useEffect(() => {
     if (!framesLoaded || !heroRef.current) return;
+
+    // Wait for useIsMobile to resolve before starting GSAP
+    if (isMobile === undefined) return;
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: heroRef.current,
           start: 'top top',
-          end: '+=400%',       // extended for sequential animations
-          pin: true,            // pin the hero section
-          pinSpacing: true,     // push subsequent content down
+          end: isMobile ? '+=250%' : '+=400%', // Increased from 150% to 250% to make the mobile animation feel a little longer
+          pin: true,
+          pinSpacing: true,
           scrub: 0.5,
           onUpdate: (self) => {
             const progress = self.progress; // 0 → 1
@@ -818,9 +856,8 @@ export default function Hero() {
       // Animate avatar to move from right to left (or reverse for RTL)
       tl.to(avatarColumnRef.current, {
         x: () => {
-          // calculate movement to approx center or left side
-          const isMobile = window.innerWidth <= 1024;
-          return isMobile ? 0 : (isRTL ? window.innerWidth * 0.35 : -window.innerWidth * 0.35);
+          if (isMobile) return 0; // Stay centered on mobile
+          return isRTL ? window.innerWidth * 0.35 : -window.innerWidth * 0.35;
         },
         duration: 1,
         ease: 'power1.inOut'
@@ -836,32 +873,28 @@ export default function Hero() {
       const orbitalBadges = gsap.utils.toArray('.orbital-badge');
       const skillBars = gsap.utils.toArray('.skill-bar-wrapper');
 
-      // Phase 1: Orbit badges already move left because they are children of AvatarColumn!
-
       // Reset color overlay initially
       tl.set('.hero-color-overlay', { backgroundColor: 'transparent' }, 0);
-      tl.set(skillBars, { autoAlpha: 0, width: 50, scale: 0.2 }, 0); // Hide skill bars initially
-      tl.set('.skill-title', { autoAlpha: 0 }, 0); // Hide skill title initially
+      tl.set(skillBars, { autoAlpha: 0, width: 50, scale: 0.2 }, 0);
+      tl.set('.skill-title', { autoAlpha: 0 }, 0);
 
-      // Reveal the title when the first batch impacts (at time 1.0)
+      // Reveal the title
       tl.to('.skill-title', {
-        autoAlpha: 0.08, // Increased opacity as requested
+        autoAlpha: 0.08,
         duration: 2,
         ease: 'power2.out'
       }, 0.8);
 
-      // Stagger badges in rapid succession (0.2s between each) to save timeline space
+      // Stagger badges in rapid succession
       orbitalBadges.forEach((badge, index) => {
-        const startTime = 0.5 + index * 0.15; // Extremely dense timeline: 0.5, 0.65, 0.8, 0.95...
-        const impactTime = startTime + 0.3; // Very fast travel time
+        const startTime = 0.5 + index * 0.15;
+        const impactTime = startTime + 0.3;
 
-        // Calculate a random spray direction to shoot out of the avatar before locking into the grid
         const angle = (Math.PI * 2 * index) / orbitalBadges.length;
-        const radius = 300;
+        const radius = isMobile ? 130 : 300; // Smaller radius on mobile
         const targetX = Math.cos(angle) * radius * (isRTL ? -1 : 1);
         const targetY = Math.sin(angle) * radius;
 
-        // Phase 2: Shoot wildly into the screen
         tl.to(badge, {
           x: targetX,
           y: targetY,
@@ -869,21 +902,16 @@ export default function Hero() {
           ease: 'power2.in'
         }, startTime);
 
-        // Phase 3: Exact moment of impact
         tl.to(badge, {
-          scale: 3, // Smaller explosion since there are so many
-          autoAlpha: 0, // Need to make it disappear
+          scale: 3,
+          autoAlpha: 0,
           duration: 0.15,
           ease: 'power1.out'
         }, impactTime);
 
-        // Missing background color flash per user request
-
-        // Reveal the Flexbox Grid Skill Bar popping out of the exact same moment
         const skillBar = skillBars[index];
-        const targetWidth = () => window.innerWidth <= 1024 ? 140 : 180; // Smaller bars to fit 2+ columns
+        const targetWidth = isMobile ? '48%' : 180;
 
-        // Pop the bar in its natural Flexbox grid position (no absolute top/left needed)
         tl.to(skillBar, {
           autoAlpha: 1,
           scale: 1,
@@ -892,14 +920,12 @@ export default function Hero() {
           ease: 'back.out(1.5)'
         }, impactTime);
 
-        // Fill skill bar percent
         tl.to(skillBar.querySelector('.skill-fill'), {
           width: (i, el) => el.getAttribute('data-percent'),
           duration: 0.4,
           ease: 'power2.out'
         }, impactTime + 0.1);
 
-        // Show percent text
         tl.to(skillBar.querySelector('.skill-percent'), {
           opacity: 1,
           duration: 0.2
@@ -908,13 +934,27 @@ export default function Hero() {
 
     }, heroRef);
 
-    return () => ctx.revert();
-  }, [framesLoaded, startLoop, stopLoop, isRTL]);
+    // CRITICAL: We just created a massive pin-spacer that pushes the entire page down. 
+    // We MUST tell ScrollTrigger to recalculate all trigger positions (like Projects section) 
+    // so they don't fire 400vh too early!
+    const refreshTimer = setTimeout(() => ScrollTrigger.refresh(), 150);
 
-  /* ── Particle field ── */
+    return () => {
+      clearTimeout(refreshTimer);
+      ctx.revert();
+    };
+  }, [framesLoaded, startLoop, stopLoop, isRTL, isMobile]);
+
+  /* ── Particle field (mobile: 15 dots only, no connections) ── */
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || isMobile === undefined) return;
+
+    // On mobile: reduced particles, but keep animated
+    if (isMobile) {
+      canvas.style.display = 'block';
+    }
+
     const ctx = canvas.getContext('2d');
     let animId;
     let particles = [];
@@ -935,7 +975,7 @@ export default function Hero() {
 
     const createParticles = () => {
       particles = [];
-      const count = Math.min(80, Math.floor(window.innerWidth / 15)); // Slightly reduced count for better scroll perf
+      const count = isMobile ? 15 : Math.min(80, Math.floor(window.innerWidth / 15));
       for (let i = 0; i < count; i++) {
         particles.push({
           x: Math.random() * canvas.width,
@@ -975,20 +1015,22 @@ export default function Hero() {
         ctx.fillStyle = `hsla(${p.hue}, 70%, 65%, ${p.opacity})`;
         ctx.fill();
 
-        for (let j = i + 1; j < particles.length; j++) {
-          const p2 = particles[j];
-          const dx2 = p.x - p2.x;
-          const dy2 = p.y - p2.y;
-          const dist2Sq = dx2 * dx2 + dy2 * dy2;
+        if (!isMobile) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const p2 = particles[j];
+            const dx2 = p.x - p2.x;
+            const dy2 = p.y - p2.y;
+            const dist2Sq = dx2 * dx2 + dy2 * dy2;
 
-          if (dist2Sq < 16900) { // 130 * 130 = 16900
-            const d = Math.sqrt(dist2Sq);
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `hsla(${p.hue}, 60%, 60%, ${0.12 * (1 - d / 130)})`;
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
+            if (dist2Sq < 16900) { // 130 * 130 = 16900
+              const d = Math.sqrt(dist2Sq);
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.strokeStyle = `hsla(${p.hue}, 60%, 60%, ${0.12 * (1 - d / 130)})`;
+              ctx.lineWidth = 0.6;
+              ctx.stroke();
+            }
           }
         }
       });
@@ -1017,10 +1059,11 @@ export default function Hero() {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, []);
+  }, [isMobile]);
 
-  /* ── Interactive floating for avatar ── */
+  /* ── Interactive floating for avatar (desktop only) ── */
   useEffect(() => {
+    if (isMobile === undefined || isMobile) return; // No mouse parallax on mobile
     const handleMove = (e) => {
       if (!avatarRef.current) return;
       const x = (e.clientX / window.innerWidth - 0.5) * 20;
@@ -1029,7 +1072,7 @@ export default function Hero() {
     };
     window.addEventListener('mousemove', handleMove);
     return () => window.removeEventListener('mousemove', handleMove);
-  }, []);
+  }, [isMobile]);
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
@@ -1109,9 +1152,8 @@ export default function Hero() {
             {/* Orbital Badges (Inside AvatarWrapper to tightly anchor to the Avatar) */}
             {BADGES.map((badge, index) => {
               // Generate deterministic starting positions based on index so server/client match (fix hydration error)
-              // pseudo-random using index to spread them out predictably
-              const pseudoRandom1 = (index * 7) % 80; // 0 to 79
-              const pseudoRandom2 = (index * 13) % 20; // 0 to 19
+              const pseudoRandom1 = (index * 7) % 80;
+              const pseudoRandom2 = (index * 13) % 20;
 
               const top = `${pseudoRandom1 + 10}%`;
               const left = index % 2 === 0 ? `${pseudoRandom2 - 10}%` : 'auto';
@@ -1133,7 +1175,7 @@ export default function Hero() {
                   <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     width: '45px', height: '45px', borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)', fontSize: '1.2rem',
                     animation: `float ${speed} ease-in-out infinite`,
                     animationDelay: delay

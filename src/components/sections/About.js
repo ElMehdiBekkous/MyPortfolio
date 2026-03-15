@@ -3,6 +3,7 @@ import { useRef, useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import * as THREE from 'three';
 import { useLanguage } from '@/context/LanguageContext';
+import useIsMobile from '@/lib/useIsMobile';
 
 const AboutSection = styled.section`
   position: relative;
@@ -12,7 +13,10 @@ const AboutSection = styled.section`
   background-color: transparent;
   overflow: visible;
   font-family: ${({ theme }) => theme.fonts?.sans || "'Inter', sans-serif"};
-  touch-action: none;
+
+  @media (min-width: 769px) {
+    touch-action: none;
+  }
 `;
 
 const CanvasContainer = styled.div`
@@ -147,6 +151,7 @@ const contentData = {
 export default function About() {
   const { t, isRTL } = useLanguage();
   const themeContext = useTheme();
+  const isMobile = useIsMobile();
   const mountRef = useRef(null);
   const [hoveredData, setHoveredData] = useState(contentData.default);
   const [isFading, setIsFading] = useState(false);
@@ -169,7 +174,7 @@ export default function About() {
   };
 
   useEffect(() => {
-    if (!mountRef.current) return;
+    if (!mountRef.current || isMobile === undefined) return;
 
     const initialThemeName = themeContext?.name || 'dark';
     const initialBgColor = themeContext?.colors?.bg || '#0f172a';
@@ -190,11 +195,13 @@ export default function About() {
     camera.position.set(12, 10, 15);
     camera.lookAt(0, 1, 0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = !isMobile; // Disable shadow maps on mobile
+    if (!isMobile) {
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
     container.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -202,16 +209,18 @@ export default function About() {
 
     const dirLight = new THREE.DirectionalLight(0xfff0dd, 1.2);
     dirLight.position.set(5, 12, 8);
-    dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
-    dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 25;
-    dirLight.shadow.camera.left = -10;
-    dirLight.shadow.camera.right = 10;
-    dirLight.shadow.camera.top = 10;
-    dirLight.shadow.camera.bottom = -10;
-    dirLight.shadow.bias = -0.001;
+    if (!isMobile) {
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 1024;
+      dirLight.shadow.mapSize.height = 1024;
+      dirLight.shadow.camera.near = 0.5;
+      dirLight.shadow.camera.far = 25;
+      dirLight.shadow.camera.left = -10;
+      dirLight.shadow.camera.right = 10;
+      dirLight.shadow.camera.top = 10;
+      dirLight.shadow.camera.bottom = -10;
+      dirLight.shadow.bias = -0.001;
+    }
     scene.add(dirLight);
 
     const fillLight = new THREE.DirectionalLight(0xcceeff, 0.4);
@@ -437,9 +446,13 @@ export default function About() {
 
     const clock = new THREE.Clock();
     let animationFrameId;
+    let isVisible = false; // Start false to prevent blocking shaders compilation on load
 
     function animate() {
       animationFrameId = requestAnimationFrame(animate);
+
+      // Skip rendering when section is out of viewport
+      if (!isVisible) return;
 
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
@@ -496,16 +509,23 @@ export default function About() {
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 2));
       checkIntersections();
     };
 
     window.addEventListener('resize', handleResize);
 
+    // Pause rendering when out of view for GPU savings
+    const visibilityObserver = new IntersectionObserver((entries) => {
+      isVisible = entries[0].isIntersecting;
+    }, { threshold: 0.05 });
+    visibilityObserver.observe(container);
+
     animate();
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      visibilityObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       container.removeEventListener('pointermove', onPointerMove);
       container.removeEventListener('touchstart', onPointerMove);
@@ -529,7 +549,7 @@ export default function About() {
       sceneElementsRef.current = {};
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once
+  }, [isMobile]); // Re-create scene if mobile state changes
 
   useEffect(() => {
     if (!sceneElementsRef.current.scene || !themeContext) return;

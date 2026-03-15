@@ -50,6 +50,7 @@ const StickyContainer = styled.div`
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh; /* dvh ensures mobile Safari/Chrome UI bars don't hide the bottom of the container! */
   width: 100%;
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.bg || '#050505'};
@@ -57,14 +58,14 @@ const StickyContainer = styled.div`
 
 const Header = styled.header`
   position: absolute;
-  top: 2rem;
+  top: 6rem; /* Pushed down from 2rem to ensure the fixed Navbar doesn't overlap the text */
   left: 2rem;
   z-index: 50;
   mix-blend-mode: difference;
   pointer-events: none;
   
   @media (min-width: 768px) {
-    top: 3rem;
+    top: 7rem;
     left: 3rem;
   }
 `;
@@ -84,14 +85,14 @@ const HeaderTitle = styled.h1`
 
 const ScrollHintWrapper = styled.div`
   position: absolute;
-  top: 2rem;
+  top: 6rem; /* Pushed down to match header */
   right: 2rem;
   z-index: 50;
   mix-blend-mode: difference;
   pointer-events: none;
   
   @media (min-width: 768px) {
-    top: 3rem;
+    top: 7rem;
     right: 3rem;
   }
 `;
@@ -139,6 +140,7 @@ const ScrollContainer = styled.div`
 const Slide = styled.section`
   width: 100vw;
   height: 100vh;
+  height: 100dvh; /* prevents overlap issues on mobile browsers */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -334,15 +336,23 @@ export default function Projects() {
 
   // Calculate required height based on number of projects
   useEffect(() => {
+    let refreshTimeout;
     const updateHeight = () => {
       // 100vh for each project to ensure enough scroll duration
       const totalHeight = (projects.length * window.innerWidth) + window.innerHeight;
       setSectionHeight(`${totalHeight}px`);
+
+      // Give the DOM a tiny moment to apply the new height before recalculating triggers
+      clearTimeout(refreshTimeout);
+      refreshTimeout = setTimeout(() => ScrollTrigger.refresh(), 50);
     };
 
     updateHeight();
     window.addEventListener('resize', updateHeight);
-    return () => window.removeEventListener('resize', updateHeight);
+    return () => {
+      clearTimeout(refreshTimeout);
+      window.removeEventListener('resize', updateHeight);
+    };
   }, []);
 
   // GSAP ScrollTrigger Logic (No pinning, just scroll tracking)
@@ -407,8 +417,11 @@ export default function Projects() {
     };
   }, [isRtl]);
 
-  // Custom Cursor Logic
+  // Custom Cursor Logic (desktop only — cursor is hidden on touch devices)
   useEffect(() => {
+    // Skip on touch devices — the cursor is invisible via CSS `pointer: coarse` anyway
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+
     let cursorX = window.innerWidth / 2;
     let cursorY = window.innerHeight / 2;
     let targetCursorX = cursorX;

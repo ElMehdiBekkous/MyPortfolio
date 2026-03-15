@@ -40,7 +40,7 @@ const SvgContainer = styled.div`
   }
 
   .animated-content {
-    transform-origin: 960px 540px;
+    transform-origin: 960px 480px;
     animation: cinematicReveal 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     opacity: 0;
   }
@@ -53,15 +53,47 @@ const SvgContainer = styled.div`
 
   @keyframes cinematicReveal {
     0% {
-      transform: scale(1.6);
+      transform: scale(2);
       opacity: 0;
       filter: blur(25px);
     }
     30% { opacity: 1; }
     100% {
-      transform: scale(1);
+      transform: scale(1.3);
       opacity: 1;
       filter: blur(0px);
+    }
+  }
+
+  @media (max-width: 1024px) {
+    @keyframes cinematicReveal {
+      0% {
+        transform: scale(1.6);
+        opacity: 0;
+        filter: blur(25px);
+      }
+      30% { opacity: 1; }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+        filter: blur(0px);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    @keyframes cinematicReveal {
+      0% {
+        transform: scale(1.2);
+        opacity: 0;
+        filter: blur(20px);
+      }
+      30% { opacity: 1; }
+      100% {
+        transform: scale(0.65); /* Scale down entire SVG content to fit on mobile */
+        opacity: 1;
+        filter: blur(0px);
+      }
     }
   }
 

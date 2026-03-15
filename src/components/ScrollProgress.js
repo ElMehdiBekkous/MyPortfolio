@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 
 const ProgressContainer = styled.div`
@@ -15,28 +15,39 @@ const ProgressContainer = styled.div`
 const ProgressFill = styled.div`
   height: 100%;
   background: ${({ theme }) => theme.colors.gradient};
-  width: ${({ $width }) => $width}%;
-  transition: width 0.1s linear;
+  width: 0%;
   border-radius: 0 2px 2px 0;
   box-shadow: 0 0 10px ${({ theme }) => theme.colors.accentGlow};
+  will-change: width;
 `;
 
 export default function ScrollProgress() {
-    const [progress, setProgress] = useState(0);
+    const fillRef = useRef(null);
 
     useEffect(() => {
+        let ticking = false;
+
         const handleScroll = () => {
-            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const scrolled = (window.scrollY / scrollHeight) * 100;
-            setProgress(scrolled);
+            if (ticking) return;
+            ticking = true;
+
+            requestAnimationFrame(() => {
+                if (fillRef.current) {
+                    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+                    const scrolled = (window.scrollY / scrollHeight) * 100;
+                    fillRef.current.style.width = `${scrolled}%`;
+                }
+                ticking = false;
+            });
         };
-        window.addEventListener('scroll', handleScroll);
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     return (
         <ProgressContainer>
-            <ProgressFill $width={progress} />
+            <ProgressFill ref={fillRef} />
         </ProgressContainer>
     );
 }
