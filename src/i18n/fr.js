@@ -59,35 +59,33 @@ export const fr = {
         viewProject: 'Voir le Projet',
         items: [
             {
-                title: 'E-Commerce',
-                subtitle: 'Marketplace Full-Stack',
-                description: 'Une solution e-commerce complète avec gestion d\'inventaire en temps réel, paiements Stripe et tableau de bord administrateur. Construit avec Next.js et Firebase.',
+                title: 'LaEcoVida',
+                subtitle: 'Plateforme E-Commerce Principale',
+                description: 'La vitrine principale de LaEcoVida pour le matériel thermique et les pompes à chaleur. Développé avec Next.js pour des performances optimales.',
+                image: '/projects/laecovida.jpg',
+                link: 'https://merechauffer-ddc.vercel.app/'
             },
             {
-                title: 'SaaS',
-                subtitle: 'Analytique & Gestion',
-                description: 'Un tableau de bord SaaS complet avec analytique en temps réel, gestion d\'équipe et facturation par abonnement. Mode sombre et graphiques responsive.',
+                title: 'Enrgestion',
+                subtitle: 'Système de Gestion Énergétique',
+                description: 'Plateforme de gestion et d\'optimisation des ressources énergétiques. Interface utilisateur intuitive avec des rendus de données en temps réel.',
+                image: '/projects/enrgestion.jpg',
+                link: 'https://enrgestion.vercel.app/'
             },
             {
-                title: 'Social',
-                subtitle: 'Plateforme Communautaire',
-                description: 'Une plateforme de médias sociaux en temps réel avec stories, messagerie, notifications et modération de contenu. Support d\'images et vidéos.',
+                title: 'LaEcoVida Admin',
+                subtitle: 'Tableau de Bord Administratif',
+                description: 'Le centre névralgique pour gérer l\'inventaire, les devis et les interactions clients de LaEcoVida. Interface sécurisée et réactive.',
+                image: '/projects/admin.jpg',
+                link: 'https://adminmechauffer.vercel.app/'
             },
             {
-                title: 'IA Générative',
-                subtitle: 'Outil d\'Intelligence Artificielle',
-                description: 'Un outil de génération de contenu alimenté par l\'IA qui crée des articles de blog, du contenu pour les réseaux sociaux et du copywriting marketing.',
-            },
-            {
-                title: 'Immobilier',
-                subtitle: 'Marketplace Immobilier',
-                description: 'Une plateforme d\'annonces immobilières avec recherche avancée, intégration de cartes, visites virtuelles et système de gestion d\'agents.',
-            },
-            {
-                title: 'Crypto',
-                subtitle: 'Dashboard Finance',
-                description: 'Un suivi de portefeuille de cryptomonnaies en temps réel avec prix en direct, analytique de portefeuille et intégration de signaux de trading.',
-            },
+                title: 'LaEcoVida Boutique',
+                subtitle: 'Boutique en Ligne Spécialisée',
+                description: 'Espace e-commerce dédié à l\'achat direct des produits thermiques LaEcoVida, avec un tunnel d\'achat fluide pour améliorer les conversions.',
+                image: '/projects/boutique.jpg',
+                link: 'https://merechauffer-ddc.vercel.app/boutique'
+            }
         ],
     },
 

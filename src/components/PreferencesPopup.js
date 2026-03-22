@@ -395,7 +395,7 @@ export default function PreferencesPopup() {
       <Overlay />
       <Modal>
         <ModalHeader>
-          <FloatingOrb $size={120} $color="#6C63FF55" $top="-30px" $right="-20px" $speed="5s" $blur={50} />
+          <FloatingOrb $size={120} $color="#10B98155" $top="-30px" $right="-20px" $speed="5s" $blur={50} />
           <FloatingOrb $size={80} $color="#E040FB44" $top="20px" $left="-30px" $speed="7s" $blur={40} />
           <Emoji>✨</Emoji>
           <Title>{t('preferences.title')}</Title>

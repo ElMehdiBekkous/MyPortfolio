@@ -147,7 +147,10 @@ const ScrollContainer = styled.div`
 `;
 
 const Slide = styled.section`
-  width: 100vw;
+  width: 120vw;
+  @media (max-width: 768px) {
+    width: 160vw;
+  }
   height: 100vh;
   height: 100dvh; /* prevents overlap issues on mobile browsers */
   display: flex;
@@ -165,7 +168,8 @@ const TitleParallaxOutline = styled.h2`
   font-size: 25vw;
   font-family: 'Anton', sans-serif;
   text-transform: uppercase;
-  white-space: nowrap;
+  line-height: 0.85;
+  text-align: center;
   pointer-events: none;
   user-select: none;
   color: transparent;
@@ -183,7 +187,8 @@ const TitleParallaxSolid = styled.h2`
   font-size: 25vw;
   font-family: 'Anton', sans-serif;
   text-transform: uppercase;
-  white-space: nowrap;
+  line-height: 0.85;
+  text-align: center;
   pointer-events: none;
   user-select: none;
   mix-blend-mode: difference;
@@ -202,12 +207,49 @@ const ImageWrapper = styled.a`
   position: relative;
   z-index: 10;
   cursor: none;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   
   @media (min-width: 768px) {
     width: 45vw;
     height: 70vh;
   }
+`;
+
+const BrowserBar = styled.div`
+  height: 2rem;
+  background-color: #2d2d31;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+`;
+
+const Dot = styled.div`
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: ${props => props.$color};
+`;
+
+const BrowserAddressBar = styled.div`
+  flex: 1;
+  height: 1.25rem;
+  background-color: #1e1e20;
+  border-radius: 4px;
+  margin-left: 1rem;
+  max-width: 60%;
+`;
+
+const ImageInnerContainer = styled.div`
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
 `;
 
 const GradientOverlay = styled.div`
@@ -230,12 +272,13 @@ const ProjectImage = styled.img`
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.3);
-  will-change: transform;
+  object-position: top;
+  will-change: object-position, transform;
   transition: transform 0.7s;
+  transform: scale(1);
   
   ${ImageWrapper}:hover & {
-    transform: scale(1.35);
+    transform: scale(1.05); /* Slight zoom, no distortion */
   }
 `;
 
@@ -366,11 +409,14 @@ export default function Projects() {
     if (!sectionRef.current || !containerRef.current) return;
 
     let ctx;
-    // 500ms delay ensures Hero's pin-spacer is in the DOM before we calculate positions
+    // 500ms delay ensures Hero's pin-spacer
     const timer = setTimeout(() => {
       ctx = gsap.context(() => {
+        // We do NOT use containerRef.current.scrollWidth because overflowing title text 
         const winWidth = window.innerWidth;
-        const totalScrollDistance = (projects.length - 1) * winWidth;
+        const isMobile = winWidth <= 768;
+        const slideWidth = isMobile ? winWidth * 1.6 : winWidth * 1.2; // Match the Slide width
+        const totalScrollDistance = (projects.length - 1) * slideWidth;
         // Always negative: direction:ltr on the container means layout is always left→right,
         // so we always translate LEFT to reveal the next project.
         const targetX = -totalScrollDistance;
@@ -415,14 +461,31 @@ export default function Projects() {
 
         // Per-slide parallax
         const slides = containerRef.current.querySelectorAll('.slide');
-        slides.forEach((slide) => {
+        const numSlides = slides.length;
+        const mainMoveDuration = 0.95;
+        const segment = mainMoveDuration / Math.max(1, numSlides - 1);
+
+        slides.forEach((slide, i) => {
           const img = slide.querySelector('.parallax-bg');
           if (img) {
+            // Calculate strictly when this specific slide is panning through the viewport
+            let startT = 0.05 + (i - 1) * segment;
+            let dur = 2 * segment;
+            
+            if (i === 0) {
+              startT = 0; // Starts animating immediately during the 5% delay
+              dur = 0.05 + segment; 
+            } else if (i === numSlides - 1) {
+              startT = 0.05 + (i - 1) * segment;
+              dur = segment;
+            }
+
+            // Scroll the tall screenshot downwards independently
             tl.to(img, {
-              x: "25%",
+              objectPosition: "50% 100%", 
               ease: "none",
-              duration: 0.95
-            }, 0.05);
+              duration: dur
+            }, Math.max(0, startT));
           }
 
           const titles = slide.querySelectorAll('.title-parallax');
@@ -536,37 +599,55 @@ export default function Projects() {
             return (
               <Slide key={projet.id} className="slide" data-index={index}>
                 <TitleParallaxOutline className="title-parallax">
-                  {title}
+                  {title.split(' ').map((word, i, arr) => (
+                    <span key={i}>
+                      {word}
+                      {i !== arr.length - 1 && <br />}
+                    </span>
+                  ))}
                 </TitleParallaxOutline>
 
                 <ImageWrapper
-                  href={projet.link}
-                  target="_blank"
+                  href={translated?.link || projet.link || "#"}
+                  target={translated?.link || projet.link ? "_blank" : undefined}
                   rel="noreferrer"
                   onMouseEnter={handleMouseEnterImage}
                   onMouseLeave={handleMouseLeaveImage}
                 >
-                  <GradientOverlay />
-                  <ProjectImage
-                    src={projet.image}
-                    className="parallax-bg"
-                    alt={`Image du projet ${title}`}
-                  />
-                  <ProjectInfo>
-                    <ProjectRole>
-                      <RoleIndex>0{index + 1}</RoleIndex> {role}
-                    </ProjectRole>
-                    <ProjectDescText>
-                      {description}
-                    </ProjectDescText>
-                    <ViewProjectBtn>
-                      {t('projects.viewProject') || 'Voir le projet'} <Arrow>→</Arrow>
-                    </ViewProjectBtn>
-                  </ProjectInfo>
+                  <BrowserBar>
+                    <Dot $color="#ff5f56" />
+                    <Dot $color="#ffbd2e" />
+                    <Dot $color="#27c93f" />
+                    <BrowserAddressBar />
+                  </BrowserBar>
+                  <ImageInnerContainer>
+                    <GradientOverlay />
+                    <ProjectImage
+                      src={translated?.image || projet.image}
+                      className="parallax-bg"
+                      alt={`Image du projet ${title}`}
+                    />
+                    <ProjectInfo>
+                      <ProjectRole>
+                        <RoleIndex>0{index + 1}</RoleIndex> {role}
+                      </ProjectRole>
+                      <ProjectDescText>
+                        {description}
+                      </ProjectDescText>
+                      <ViewProjectBtn>
+                        {t('projects.viewProject') || 'Voir le projet'} <Arrow>→</Arrow>
+                      </ViewProjectBtn>
+                    </ProjectInfo>
+                  </ImageInnerContainer>
                 </ImageWrapper>
 
                 <TitleParallaxSolid className="title-parallax">
-                  {title}
+                  {title.split(' ').map((word, i, arr) => (
+                    <span key={i}>
+                      {word}
+                      {i !== arr.length - 1 && <br />}
+                    </span>
+                  ))}
                 </TitleParallaxSolid>
               </Slide>
             );

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useLanguage } from '@/context/LanguageContext';
-import { FaGithub, FaLinkedinIn, FaTwitter, FaDribbble } from 'react-icons/fa';
+import { FaGithub, FaLinkedinIn, FaInstagram } from 'react-icons/fa';
 
 // Background SVGs
 const NoiseOverlay = styled.div`
@@ -464,17 +464,14 @@ export default function Contact() {
 
             <SocialsLabel>{t('contact.findMeOn') || 'Find me on'}</SocialsLabel>
             <SocialsRow>
-              <SocialBtn href="https://github.com" target="_blank" title="GitHub">
+              <SocialBtn href="https://github.com/ElMehdiBekkous" target="_blank" title="GitHub">
                 <FaGithub />
               </SocialBtn>
-              <SocialBtn href="https://linkedin.com" target="_blank" title="LinkedIn">
+              <SocialBtn href="https://www.linkedin.com/in/el-mehdi-bekkous/" target="_blank" title="LinkedIn">
                 <FaLinkedinIn />
               </SocialBtn>
-              <SocialBtn href="https://twitter.com" target="_blank" title="Twitter/X">
-                <FaTwitter />
-              </SocialBtn>
-              <SocialBtn href="https://dribbble.com" target="_blank" title="Dribbble">
-                <FaDribbble />
+              <SocialBtn href="https://www.instagram.com/mehdibekkousse/" target="_blank" title="Instagram">
+                <FaInstagram />
               </SocialBtn>
             </SocialsRow>
           </LeftPanel>

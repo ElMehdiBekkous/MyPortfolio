@@ -59,35 +59,33 @@ export const ar = {
         viewProject: 'عرض المشروع',
         items: [
             {
-                title: 'متجر إلكتروني',
-                subtitle: 'سوق إلكتروني متكامل',
-                description: 'حل تجارة إلكترونية متكامل مع إدارة المخزون في الوقت الفعلي ومدفوعات Stripe ولوحة تحكم للمسؤول. مبني بـ Next.js و Firebase.',
+                title: 'LaEcoVida',
+                subtitle: 'منصة التجارة الإلكترونية الرئيسية',
+                description: 'الواجهة الرئيسية لـ LaEcoVida للمعدات الحرارية والمضخات الحرارية. تم تطويرها بواسطة Next.js لأداء سريع وتحسين محركات البحث.',
+                image: '/projects/laecovida.jpg',
+                link: 'https://merechauffer-ddc.vercel.app/'
             },
             {
-                title: 'منصة SaaS',
-                subtitle: 'تحليلات وإدارة',
-                description: 'لوحة تحكم SaaS شاملة مع تحليلات في الوقت الفعلي وإدارة الفريق وفوترة الاشتراكات. تتضمن الوضع الداكن ورسوم بيانية متجاوبة.',
+                title: 'Enrgestion',
+                subtitle: 'نظام إدارة الطاقة',
+                description: 'منصة شاملة لإدارة وتحسين موارد الطاقة. تتميز بلوحة تحكم بديهية مع عرض البيانات في الوقت الفعلي.',
+                image: '/projects/enrgestion.jpg',
+                link: 'https://enrgestion.vercel.app/'
             },
             {
-                title: 'تواصل اجتماعي',
-                subtitle: 'منصة مجتمعية',
-                description: 'منصة تواصل اجتماعي في الوقت الفعلي مع القصص والمراسلة والإشعارات وإدارة المحتوى. يدعم تحميل الصور والفيديوهات.',
+                title: 'LaEcoVida Admin',
+                subtitle: 'لوحة التحكم الإدارية',
+                description: 'المركز الرئيسي لإدارة المخزون وعروض الأسعار وتفاعلات العملاء لـ LaEcoVida. مبنية مع التركيز على الأمان وسرعة سير العمل.',
+                image: '/projects/admin.jpg',
+                link: 'https://adminmechauffer.vercel.app/'
             },
             {
-                title: 'ذكاء اصطناعي',
-                subtitle: 'أداة تعلم آلي',
-                description: 'أداة توليد محتوى مدعومة بالذكاء الاصطناعي تنشئ مقالات المدونة ومحتوى وسائل التواصل الاجتماعي والنصوص التسويقية.',
-            },
-            {
-                title: 'عقارات',
-                subtitle: 'سوق عقاري',
-                description: 'منصة إعلانات عقارية مع بحث متقدم وتكامل الخرائط وجولات افتراضية ونظام إدارة الوكلاء.',
-            },
-            {
-                title: 'لوحة كريبتو',
-                subtitle: 'لوحة مالية',
-                description: 'متتبع محفظة عملات رقمية في الوقت الفعلي مع تحديثات الأسعار المباشرة وتحليلات المحفظة وتكامل إشارات التداول.',
-            },
+                title: 'LaEcoVida Boutique',
+                subtitle: 'متجر إلكتروني متخصص',
+                description: 'مساحة تجارة إلكترونية مخصصة للشراء المباشر لمنتجات LaEcoVida الحرارية، مع مسار شراء سلس وتجربة مستخدم ممتازة.',
+                image: '/projects/boutique.jpg',
+                link: 'https://merechauffer-ddc.vercel.app/boutique'
+            }
         ],
     },
 

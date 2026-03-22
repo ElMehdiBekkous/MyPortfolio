@@ -1,5 +1,8 @@
 'use client';
+import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Preloader from '@/components/Preloader';
 import ScrollProgress from '@/components/ScrollProgress';
 import PreferencesPopup from '@/components/PreferencesPopup';
@@ -15,6 +18,33 @@ const Contact = dynamic(() => import('@/components/sections/Contact'), { ssr: fa
 const Footer = dynamic(() => import('@/components/sections/Footer'), { ssr: false });
 
 export default function Home() {
+    useEffect(() => {
+        gsap.registerPlugin(ScrollTrigger);
+        ScrollTrigger.config({ ignoreMobileResize: true });
+        
+        // Normalize scroll behavior across devices (fixes mobile scroll thread jitters / detachments)
+        ScrollTrigger.normalizeScroll(true);
+
+        // Global Layout Observer: Wait for lazy-loaded components and heavy images 
+        // to finish injecting into the DOM and expanding the total height.
+        // Whenever the height changes, tell GSAP to recalculate pinned section coordinates 
+        // (like Hero and Projects limits) so they don't trigger too early!
+        let timeoutId;
+        const observer = new ResizeObserver(() => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                ScrollTrigger.refresh();
+            }, 300);
+        });
+
+        observer.observe(document.body);
+
+        return () => {
+            observer.disconnect();
+            clearTimeout(timeoutId);
+        };
+    }, []);
+
     return (
         <>
             <Preloader />

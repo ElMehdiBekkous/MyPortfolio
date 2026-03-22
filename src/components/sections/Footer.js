@@ -2,9 +2,10 @@
 import { useRef, useEffect } from 'react';
 import styled, { keyframes, useTheme } from 'styled-components';
 import { useLanguage } from '@/context/LanguageContext';
-import { FaGithub, FaLinkedinIn, FaTwitter, FaDribbble } from 'react-icons/fa';
+import { FaGithub, FaLinkedinIn, FaInstagram } from 'react-icons/fa';
 import { FiArrowUp, FiMail } from 'react-icons/fi';
 import LogoIcon from '@/components/Logo';
+import MagneticButton from '@/components/MagneticButton';
 
 /* ── Animations ── */
 const ticker = keyframes`from { transform: translateX(0); } to { transform: translateX(-50%); }`;
@@ -323,12 +324,16 @@ export default function Footer() {
         </CtaTitle>
         <CtaSub>{t('footer.ctaSub') || "Have a project concept or an idea you'd like to explore? Let's connect and turn your vision into reality."}</CtaSub>
         <CtaButtons>
-          <CtaBtn href="#contact" onClick={e => { e.preventDefault(); handleClick('contact'); }}>
-            <FiMail /> {t('nav.letsTalk')}
-          </CtaBtn>
-          <CtaBtnOutline href="https://github.com" target="_blank">
-            <FaGithub /> GitHub
-          </CtaBtnOutline>
+          <MagneticButton>
+            <CtaBtn href="#contact" onClick={e => { e.preventDefault(); handleClick('contact'); }}>
+              <FiMail /> {t('nav.letsTalk')}
+            </CtaBtn>
+          </MagneticButton>
+          <MagneticButton>
+            <CtaBtnOutline href="https://github.com/ElMehdiBekkous" target="_blank">
+              <FaGithub /> GitHub
+            </CtaBtnOutline>
+          </MagneticButton>
         </CtaButtons>
       </CtaArea>
 
@@ -352,10 +357,9 @@ export default function Footer() {
             </BrandRow>
             <BrandDesc>{t('footer.brandDesc')}</BrandDesc>
             <FooterSocials>
-              <SocialBtn href="https://github.com" target="_blank" title="GitHub"><FaGithub /></SocialBtn>
-              <SocialBtn href="https://linkedin.com" target="_blank" title="LinkedIn"><FaLinkedinIn /></SocialBtn>
-              <SocialBtn href="https://twitter.com" target="_blank" title="Twitter"><FaTwitter /></SocialBtn>
-              <SocialBtn href="https://dribbble.com" target="_blank" title="Dribbble"><FaDribbble /></SocialBtn>
+              <SocialBtn href="https://github.com/ElMehdiBekkous" target="_blank" title="GitHub"><FaGithub /></SocialBtn>
+              <SocialBtn href="https://www.linkedin.com/in/el-mehdi-bekkous/" target="_blank" title="LinkedIn"><FaLinkedinIn /></SocialBtn>
+              <SocialBtn href="https://www.instagram.com/mehdibekkousse/" target="_blank" title="Instagram"><FaInstagram /></SocialBtn>
             </FooterSocials>
           </BrandCol>
 

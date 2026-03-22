@@ -50,7 +50,7 @@ const CursorRing = styled.div`
   left: 0;
   width: 140px; /* 70 * 2 = 140 base REPEL_RADIUS diameter */
   height: 140px;
-  border: 1px solid ${({ theme }) => theme.colors.accent};
+  border: 1px solid #0EA5E9;
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
@@ -64,7 +64,7 @@ const CursorDot = styled.div`
   left: 0;
   width: 10px;
   height: 10px;
-  background-color: ${({ theme }) => theme.colors.accent};
+  background-color: #0EA5E9;
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
@@ -136,8 +136,8 @@ const BubbleContent = styled.div`
 `;
 
 const InitialsCircle = styled.div`
-  width: ${({ $isActive }) => $isActive ? '60px' : '100%'};
-  height: ${({ $isActive }) => $isActive ? '60px' : '100%'};
+  width: ${({ $isActive }) => $isActive ? '60px' : '80px'};
+  height: ${({ $isActive }) => $isActive ? '60px' : '80px'};
   border-radius: 50%;
   background: linear-gradient(135deg, ${({ $color, theme }) => $color || theme.colors.accent}, ${({ $color, theme }) => $color ? `${$color}80` : theme.colors.accentLight});
   color: #fff;
@@ -311,7 +311,7 @@ const Testimonials = () => {
             homeX: x, homeY: y,
             vx: 0, vy: 0,
             r: 2.2 + Math.random() * 1.2,
-            color: isAccent ? theme.colors.accent : theme.colors.accentLight,
+            color: isAccent ? '#0EA5E9' : '#3B82F6', // Blue theme override
           });
         }
       }
@@ -330,6 +330,7 @@ const Testimonials = () => {
       // the canvas physics uses centralized coordinates to map offW x offH onto full screen
       const centerOffsetX = (canvas.width - offW) / 2;
       const centerOffsetY = (canvas.height - offH) / 2;
+      const isMobile = window.innerWidth <= 768;
 
       for (const p of particles) {
         const globalHomeX = p.homeX + centerOffsetX;
@@ -343,10 +344,14 @@ const Testimonials = () => {
         const dy = p.y + centerOffsetY - mouseCanvasY;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < REPEL_RADIUS && mouseCanvasX > 0) {
+        if (!isMobile && dist < REPEL_RADIUS && mouseCanvasX > 0) {
           const force = (REPEL_RADIUS - dist) / REPEL_RADIUS;
           p.vx += (dx / dist) * force * REPEL_FORCE;
           p.vy += (dy / dist) * force * REPEL_FORCE;
+        } else if (isMobile) {
+          // Gentle vibration that returns to home
+          p.vx += (Math.random() - 0.5) * 0.4;
+          p.vy += (Math.random() - 0.5) * 0.4;
         }
 
         // spring back home
@@ -361,7 +366,7 @@ const Testimonials = () => {
         ctx.arc(p.x + centerOffsetX, p.y + centerOffsetY, p.r, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
 
-        if (dist < REPEL_RADIUS && mouseCanvasX > 0) {
+        if (!isMobile && dist < REPEL_RADIUS && mouseCanvasX > 0) {
           ctx.shadowColor = p.color;
           ctx.shadowBlur = 8 * ((REPEL_RADIUS - dist) / REPEL_RADIUS);
         } else {

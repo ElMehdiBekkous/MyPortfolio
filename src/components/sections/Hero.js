@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import styled, { keyframes } from 'styled-components';
 import { useLanguage } from '@/context/LanguageContext';
 import useIsMobile from '@/lib/useIsMobile';
-import { FiArrowDown, FiGithub, FiLinkedin, FiTwitter, FiDribbble } from 'react-icons/fi';
+import { FiArrowDown, FiGithub, FiLinkedin, FiInstagram } from 'react-icons/fi';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -109,7 +109,7 @@ const HeroSection = styled.section`
 
   @media (max-width: ${({ theme }) => theme.breakpoints.sm}) {
     padding: 5rem 0 1rem;
-    min-height: 100dvh;
+    min-height: 100vh;
   }
 `;
 
@@ -734,6 +734,8 @@ export default function Hero() {
   const lastDrawnFrameRef = useRef(null);
 
   const [framesLoaded, setFramesLoaded] = useState(false);
+  const framesLoadedRef = useRef(false);
+  const [firstFrameLoaded, setFirstFrameLoaded] = useState(false);
   const animState = useRef('idle'); // 'idle' | 'scroll' | 'action'
   const loopTimerRef = useRef(null);
   const loopIndexRef = useRef(0);
@@ -742,20 +744,65 @@ export default function Hero() {
   useEffect(() => {
     if (isMobile === undefined) return;
 
-    const allFrames = [
+    let framesToLoad = [
       ...idleFrames.current,
       ...scrollFrames.current,
       ...actionFrames.current,
     ];
+
+    let missingFrames = [];
+
+    // Phase 1 & 2: Optimize mobile networking by loading exactly half the frames.
+    // drawFrame() safely skips missing images, creating a 15fps baseline.
+    // Once Phase 1 completes, missingFrames are downloaded in the background
+    // for an automatic, seamless upgrade to 30fps without stuttering!
+    if (isMobile) {
+      const evens = framesToLoad.filter((_, i) => i % 2 === 0);
+      missingFrames = framesToLoad.filter((_, i) => i % 2 !== 0);
+      framesToLoad = evens;
+    }
+
     let loaded = 0;
+
+    // Phase 2: Background Loader for full FPS upgrade
+    const loadMissingFrames = () => {
+      if (missingFrames.length === 0) return;
+      // Wait 1 second after core 15fps boots to let the CPU and UI settle
+      setTimeout(() => {
+        missingFrames.forEach((src) => {
+          const img = new Image();
+          img.src = src;
+          // As soon as this finishes caching, drawFrame auto-upgrades!
+          preloadedImages.current[src] = img;
+        });
+      }, 1000);
+    };
 
     // Check loading progress
     const checkLoaded = () => {
       loaded++;
-      if (loaded >= allFrames.length) setFramesLoaded(true);
+      if (loaded >= framesToLoad.length) {
+        setFramesLoaded(true);
+        framesLoadedRef.current = true;
+        loadMissingFrames(); // Trigger Phase 2
+      }
     };
 
-    allFrames.forEach((src) => {
+    const firstFrameSrc = idleFrames.current[0];
+    const firstImg = new Image();
+    firstImg.onload = () => {
+      setFirstFrameLoaded(true);
+      checkLoaded();
+    };
+    firstImg.onerror = () => {
+      setFirstFrameLoaded(true); // Count errors so we don't stall forever
+      checkLoaded();
+    };
+    firstImg.src = firstFrameSrc;
+    preloadedImages.current[firstFrameSrc] = firstImg;
+
+    framesToLoad.forEach((src) => {
+      if (src === firstFrameSrc) return;
       const img = new Image();
       img.onload = checkLoaded;
       img.onerror = checkLoaded; // Count errors so we don't stall forever
@@ -812,22 +859,33 @@ export default function Hero() {
     }
   }, []);
 
-  /* ── Start idle loop once frames are loaded ── */
+  /* ── Initial render of the first frame ── */
+  useEffect(() => {
+    if (firstFrameLoaded) {
+      drawFrame(idleFrames.current[0]);
+    }
+  }, [firstFrameLoaded, drawFrame]);
+
+  /* ── Start idle or action loop IMMEDIATELY (masking local network wait) ── */
   useEffect(() => {
     if (isMobile === undefined) return;
-    if (framesLoaded) {
-      animState.current = 'idle';
-      startLoop(idleFrames.current, IDLE_FPS);
+    
+    // We intentionally start looping AS SOON AS the first frame arrives.
+    // drawFrame() safely skips missing frames. This creates a video-buffering effect
+    // instead of paralyzing the avatar for 10 seconds while the local server struggles.
+    if (firstFrameLoaded) {
+      if (animState.current === 'idle') {
+        startLoop(idleFrames.current, IDLE_FPS);
+      } else if (animState.current === 'action') {
+        startLoop(actionFrames.current, ACTION_FPS);
+      }
     }
     return () => stopLoop();
-  }, [framesLoaded, startLoop, stopLoop, isMobile]);
+  }, [firstFrameLoaded, startLoop, stopLoop, isMobile]);
 
   /* ── GSAP ScrollTrigger — pin hero & scrub avatar frames ── */
   useEffect(() => {
-    if (!framesLoaded || !heroRef.current) return;
-
-    // Wait for useIsMobile to resolve before starting GSAP
-    if (isMobile === undefined) return;
+    if (!heroRef.current || isMobile === undefined) return;
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -837,6 +895,7 @@ export default function Hero() {
           end: isMobile ? '+=250%' : '+=400%', // Increased from 150% to 250% to make the mobile animation feel a little longer
           pin: true,
           pinSpacing: true,
+          anticipatePin: 1, // Fixes mobile detachments at extreme scroll speeds
           scrub: 0.5,
           refreshPriority: 1, // Recalculate FIRST so pin-spacer height is known before downstream triggers
           onUpdate: (self) => {
@@ -846,13 +905,13 @@ export default function Hero() {
               // At the very top — idle loop
               if (animState.current !== 'idle') {
                 animState.current = 'idle';
-                startLoop(idleFrames.current, IDLE_FPS);
+                if (framesLoadedRef.current) startLoop(idleFrames.current, IDLE_FPS);
               }
             } else if (progress >= 0.98) {
               // Reached the end — action loop
               if (animState.current !== 'action') {
                 animState.current = 'action';
-                startLoop(actionFrames.current, ACTION_FPS);
+                if (framesLoadedRef.current) startLoop(actionFrames.current, ACTION_FPS);
               }
             } else {
               // In the middle — scroll-driven frames
@@ -968,7 +1027,7 @@ export default function Hero() {
       clearTimeout(refreshTimer);
       ctx.revert();
     };
-  }, [framesLoaded, startLoop, stopLoop, isRTL, isMobile]);
+  }, [startLoop, stopLoop, isRTL, isMobile]);
 
   /* ── Particle field (mobile: 15 dots only, no connections) ── */
   useEffect(() => {
@@ -1107,9 +1166,9 @@ export default function Hero() {
       <BgLayer>
         <GridPattern />
         <ColorOverlay className="hero-color-overlay" />
-        <GradientMesh $color="radial-gradient(circle, #6C63FF, #4834d4)" $size="600px" $top="-15%" $left="5%" $speed="18s" $blur="120px" $opacity="0.2" />
-        <GradientMesh $color="radial-gradient(circle, #E040FB, #9b59b6)" $size="450px" $top="60%" $right="0%" $speed="22s" $blur="100px" $opacity="0.15" />
-        <GradientMesh $color="radial-gradient(circle, #00BCD4, #0097A7)" $size="350px" $bottom="-10%" $left="30%" $speed="25s" $blur="90px" $opacity="0.12" />
+        <GradientMesh $color="radial-gradient(circle, #10B981, #059669)" $size="600px" $top="-15%" $left="5%" $speed="18s" $blur="120px" $opacity="0.2" />
+        <GradientMesh $color="radial-gradient(circle, #0EA5E9, #38BDF8)" $size="450px" $top="60%" $right="0%" $speed="22s" $blur="100px" $opacity="0.15" />
+        <GradientMesh $color="radial-gradient(circle, #6366F1, #818CF8)" $size="350px" $bottom="-10%" $left="30%" $speed="25s" $blur="90px" $opacity="0.12" />
         <ParticleCanvas ref={canvasRef} />
       </BgLayer>
 
@@ -1157,10 +1216,9 @@ export default function Hero() {
           </HeroActions>
 
           <SocialLinks>
-            <SocialIcon href="https://github.com" target="_blank" rel="noopener noreferrer"><FiGithub /></SocialIcon>
-            <SocialIcon href="https://linkedin.com" target="_blank" rel="noopener noreferrer"><FiLinkedin /></SocialIcon>
-            <SocialIcon href="https://twitter.com" target="_blank" rel="noopener noreferrer"><FiTwitter /></SocialIcon>
-            <SocialIcon href="https://dribbble.com" target="_blank" rel="noopener noreferrer"><FiDribbble /></SocialIcon>
+            <SocialIcon href="https://github.com/ElMehdiBekkous" target="_blank" rel="noopener noreferrer"><FiGithub /></SocialIcon>
+            <SocialIcon href="https://www.linkedin.com/in/el-mehdi-bekkous/" target="_blank" rel="noopener noreferrer"><FiLinkedin /></SocialIcon>
+            <SocialIcon href="https://www.instagram.com/mehdibekkousse/" target="_blank" rel="noopener noreferrer"><FiInstagram /></SocialIcon>
           </SocialLinks>
         </TextColumn>
 
@@ -1169,7 +1227,7 @@ export default function Hero() {
           <AvatarWrapper ref={avatarRef}>
             <AvatarGlow />
             <OrbitRing>
-              <OrbitDot $color="#6C63FF" $top="0" $left="50%" />
+              <OrbitDot $color="#10B981" $top="0" $left="50%" />
               <OrbitDot $color="#E040FB" $bottom="10%" $right="0" />
               <OrbitDot $color="#00BCD4" $bottom="10%" $left="0" />
             </OrbitRing>
