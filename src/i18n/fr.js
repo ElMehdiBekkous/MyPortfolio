@@ -62,8 +62,22 @@ export const fr = {
                 title: 'LaEcoVida',
                 subtitle: 'Plateforme E-Commerce Principale',
                 description: 'La vitrine principale de LaEcoVida pour le matériel thermique et les pompes à chaleur. Développé avec Next.js pour des performances optimales.',
-                image: '/projects/laecovida.jpg',
-                link: 'https://merechauffer-ddc.vercel.app/'
+                image: '/projects/laecovida_v2.jpg',
+                link: 'https://www.laecovida.fr/'
+            },
+            {
+                title: 'Maktabt.com',
+                subtitle: 'Marketplace de Fournitures Scolaires',
+                description: 'Le premier marketplace des fournitures scolaires au Maroc. Connecte intelligemment les parents aux librairies locales via WhatsApp avec préparation et livraison rapides.',
+                image: '/projects/maktabt.jpg',
+                link: 'https://www.maktabt.com/'
+            },
+            {
+                title: 'ArropaTuCasa',
+                subtitle: "Plateforme d'Isolation Thermique & Énergie",
+                description: "Plateforme CleanTech d'isolation thermique pour l'habitat en Espagne. Intègre un simulateur dynamique d'économies d'énergie et la gestion des aides officielles CAE 2026.",
+                image: '/projects/arropatucasa.jpg',
+                link: 'https://www.arropatucasa.es/'
             },
             {
                 title: 'Enrgestion',
@@ -71,20 +85,6 @@ export const fr = {
                 description: 'Plateforme de gestion et d\'optimisation des ressources énergétiques. Interface utilisateur intuitive avec des rendus de données en temps réel.',
                 image: '/projects/enrgestion.jpg',
                 link: 'https://enrgestion.vercel.app/'
-            },
-            {
-                title: 'LaEcoVida Admin',
-                subtitle: 'Tableau de Bord Administratif',
-                description: 'Le centre névralgique pour gérer l\'inventaire, les devis et les interactions clients de LaEcoVida. Interface sécurisée et réactive.',
-                image: '/projects/admin.jpg',
-                link: 'https://adminmechauffer.vercel.app/'
-            },
-            {
-                title: 'LaEcoVida Boutique',
-                subtitle: 'Boutique en Ligne Spécialisée',
-                description: 'Espace e-commerce dédié à l\'achat direct des produits thermiques LaEcoVida, avec un tunnel d\'achat fluide pour améliorer les conversions.',
-                image: '/projects/boutique.jpg',
-                link: 'https://merechauffer-ddc.vercel.app/boutique'
             }
         ],
     },
@@ -143,6 +143,9 @@ export const fr = {
         footnote: "Vos informations sont en sécurité. Pas de spam, jamais.",
         successTitle: "Message envoyé !",
         successSub: "Merci de m'avoir contacté. Je vous répondrai dans les 24 heures.",
+        errorTitle: "Échec de l'envoi",
+        errorSub: "Une erreur s'est produite lors de l'envoi. Veuillez réessayer ou envoyer un email directement.",
+        tryAgain: "Réessayer",
     },
 
     footer: {

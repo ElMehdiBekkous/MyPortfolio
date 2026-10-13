@@ -67,8 +67,22 @@ export const en = {
                 title: 'LaEcoVida',
                 subtitle: 'Main E-Commerce Platform',
                 description: 'The primary showcase for LaEcoVida thermal equipment and heat pumps. Built with Next.js for blazing-fast performance and SEO.',
-                image: '/projects/laecovida.jpg',
-                link: 'https://merechauffer-ddc.vercel.app/'
+                image: '/projects/laecovida_v2.jpg',
+                link: 'https://www.laecovida.fr/'
+            },
+            {
+                title: 'Maktabt.com',
+                subtitle: 'School Supplies Marketplace',
+                description: 'Morocco\'s leading smart marketplace for school supplies. Connects parents directly to local partner bookstores via WhatsApp automation.',
+                image: '/projects/maktabt.jpg',
+                link: 'https://www.maktabt.com/'
+            },
+            {
+                title: 'ArropaTuCasa',
+                subtitle: 'Thermal Insulation & CleanTech',
+                description: 'Innovative home thermal insulation platform in Spain. Features a real-time energy savings calculator, lead funnel, and official CAE subsidy checks.',
+                image: '/projects/arropatucasa.jpg',
+                link: 'https://www.arropatucasa.es/'
             },
             {
                 title: 'Enrgestion',
@@ -76,20 +90,6 @@ export const en = {
                 description: 'A comprehensive platform for managing and optimizing energy resources. Features an intuitive dashboard with real-time data visualization.',
                 image: '/projects/enrgestion.jpg',
                 link: 'https://enrgestion.vercel.app/'
-            },
-            {
-                title: 'LaEcoVida Admin',
-                subtitle: 'Administrative Dashboard',
-                description: 'The central hub for managing inventory, quotes, and client interactions for LaEcoVida. Built with a focus on security and fast workflows.',
-                image: '/projects/admin.jpg',
-                link: 'https://adminmechauffer.vercel.app/'
-            },
-            {
-                title: 'LaEcoVida Boutique',
-                subtitle: 'Specialized Online Store',
-                description: 'A dedicated e-commerce space for direct purchases of LaEcoVida thermal products, featuring a frictionless checkout funnel.',
-                image: '/projects/boutique.jpg',
-                link: 'https://merechauffer-ddc.vercel.app/boutique'
             }
         ],
     },
@@ -150,6 +150,9 @@ export const en = {
         footnote: "Your info is safe with me. No spam, ever.",
         successTitle: "Message sent!",
         successSub: "Thanks for reaching out. I'll get back to you within 24 hours.",
+        errorTitle: "Failed to send",
+        errorSub: "Something went wrong while sending your message. Please try again or reach out directly.",
+        tryAgain: "Try Again",
     },
 
     // Footer

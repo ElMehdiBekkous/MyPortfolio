@@ -352,6 +352,31 @@ const SuccessSub = styled.div`
   font-size: 12px; color: ${({ theme }) => theme.colors.textMuted}; text-align: center; max-width: 240px; line-height: 1.7;
 `;
 
+const ErrorOverlay = styled.div`
+  position: absolute; inset: 0; background: ${({ theme }) => theme.colors.bgSecondary};
+  border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; opacity: ${({ $show }) => $show ? 1 : 0}; pointer-events: ${({ $show }) => $show ? 'all' : 'none'};
+  transition: opacity 0.4s ease; z-index: 10; padding: 24px; text-align: center;
+`;
+const ErrorIcon = styled.div`
+  width: 64px; height: 64px; border-radius: 50%; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+  display: flex; align-items: center; justify-content: center; font-size: 26px; color: #ef4444;
+  animation: ${({ $show }) => $show ? scaleIn : 'none'} 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+`;
+const ErrorTitle = styled.div`
+  font-family: ${({ theme }) => theme.fonts?.primary || "'Syne', sans-serif"}; font-size: 22px; font-weight: 800; color: ${({ theme }) => theme.colors.text};
+`;
+const ErrorSub = styled.div`
+  font-size: 13px; color: ${({ theme }) => theme.colors.textMuted}; text-align: center; max-width: 320px; line-height: 1.6;
+`;
+const RetryBtn = styled.button`
+  padding: 8px 24px; border-radius: 9999px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);
+  color: #ef4444; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; margin-top: 8px;
+  &:hover { background: rgba(239,68,68,0.22); transform: translateY(-1px); }
+`;
+
+const CONTACT_EMAIL = 'mbekkous2@gmail.com';
+
 export default function Contact() {
   const { t, isRTL } = useLanguage();
   
@@ -360,7 +385,8 @@ export default function Contact() {
   const [message, setMessage] = useState('');
   const [selectedChip, setSelectedChip] = useState(null);
   const [errors, setErrors] = useState({});
-  const [status, setStatus] = useState('idle'); // idle, sending, success
+  const [status, setStatus] = useState('idle'); // idle, sending, success, error
+  const [submitError, setSubmitError] = useState('');
   const [copiedEmail, setCopiedEmail] = useState(false);
 
   // Compute step
@@ -370,7 +396,7 @@ export default function Contact() {
 
   const topics = t('contact.topics', { returnObjects: true }) || ['Freelance project', 'Collaboration', 'Job opportunity', 'Just saying hi 👋'];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
     if (!name.trim()) newErrors.name = true;
@@ -379,25 +405,49 @@ export default function Contact() {
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setTimeout(() => setErrors({}), 1500);
+      setTimeout(() => setErrors({}), 2000);
       return;
     }
     
     setStatus('sending');
-    setTimeout(() => {
-      setStatus('success');
-      setTimeout(() => {
-        setStatus('idle');
-        setName('');
-        setEmail('');
-        setMessage('');
-        setSelectedChip(null);
-      }, 4000);
-    }, 1500);
+    setSubmitError('');
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          message: message.trim(),
+          topic: selectedChip || topics[0] || 'Freelance project',
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setStatus('success');
+        setTimeout(() => {
+          setStatus('idle');
+          setName('');
+          setEmail('');
+          setMessage('');
+          setSelectedChip(null);
+        }, 4000);
+      } else {
+        setStatus('error');
+        setSubmitError(data.error || t('contact.errorSub') || 'Failed to send message.');
+      }
+    } catch (err) {
+      console.error('Contact submit error:', err);
+      setStatus('error');
+      setSubmitError(t('contact.errorSub') || 'Connection error. Please try again later.');
+    }
   };
 
   const copyEmail = () => {
-    navigator.clipboard.writeText('mehdi@example.com').catch(() => {});
+    navigator.clipboard.writeText(CONTACT_EMAIL).catch(() => {});
     setCopiedEmail(true);
     setTimeout(() => setCopiedEmail(false), 2000);
   };
@@ -442,7 +492,7 @@ export default function Contact() {
                 <InfoCardContent>
                   <InfoCardLabel>{t('contact.email')}</InfoCardLabel>
                   <InfoCardValue>
-                    {copiedEmail ? <span style={{ color: '#10b981' }}>{t('contact.copiedSucc') || 'Copied ✓'}</span> : 'mehdi@example.com'} 
+                    {copiedEmail ? <span style={{ color: '#10b981' }}>{t('contact.copiedSucc') || 'Copied ✓'}</span> : CONTACT_EMAIL} 
                     {!copiedEmail && <CopyHint>{t('contact.copyHint') || 'click to copy'}</CopyHint>}
                   </InfoCardValue>
                 </InfoCardContent>
@@ -482,6 +532,15 @@ export default function Contact() {
               <SuccessTitle>{t('contact.successTitle') || 'Message sent!'}</SuccessTitle>
               <SuccessSub>{t('contact.successSub') || "Thanks for reaching out. I'll get back to you within 24 hours."}</SuccessSub>
             </SuccessOverlay>
+
+            <ErrorOverlay $show={status === 'error'}>
+              <ErrorIcon $show={status === 'error'}>✕</ErrorIcon>
+              <ErrorTitle>{t('contact.errorTitle') || 'Failed to send'}</ErrorTitle>
+              <ErrorSub>{submitError || t('contact.errorSub') || "Something went wrong while sending your message. Please try again or reach out directly."}</ErrorSub>
+              <RetryBtn type="button" onClick={() => setStatus('idle')}>
+                {t('contact.tryAgain') || 'Try Again'}
+              </RetryBtn>
+            </ErrorOverlay>
 
             <FormHeader>
               <FormTitle>{t('contact.formTitle') || 'Send a message'}</FormTitle>

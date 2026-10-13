@@ -33,6 +33,11 @@ export default function RootLayout({ children }) {
                     rel="stylesheet"
                     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
                 />
+                {/* Preload project screenshots so they display in real-time without delay */}
+                <link rel="preload" as="image" href="/projects/laecovida_v2.jpg" />
+                <link rel="preload" as="image" href="/projects/maktabt.jpg" />
+                <link rel="preload" as="image" href="/projects/arropatucasa.jpg" />
+                <link rel="preload" as="image" href="/projects/enrgestion.jpg" />
             </head>
             <body>
                 <StyledComponentsRegistry>

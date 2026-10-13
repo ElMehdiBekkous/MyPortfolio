@@ -62,8 +62,22 @@ export const ar = {
                 title: 'LaEcoVida',
                 subtitle: 'منصة التجارة الإلكترونية الرئيسية',
                 description: 'الواجهة الرئيسية لـ LaEcoVida للمعدات الحرارية والمضخات الحرارية. تم تطويرها بواسطة Next.js لأداء سريع وتحسين محركات البحث.',
-                image: '/projects/laecovida.jpg',
-                link: 'https://merechauffer-ddc.vercel.app/'
+                image: '/projects/laecovida_v2.jpg',
+                link: 'https://www.laecovida.fr/'
+            },
+            {
+                title: 'Maktabt.com',
+                subtitle: 'سوق المستلزمات المدرسية الذكي',
+                description: 'أول ماركت بليس للمستلزمات المدرسية في المغرب. يربط الآباء بشبكة المكتبات الشريكة في الحي عبر واتساب مع تجهيز فوري وتوصيل سريع.',
+                image: '/projects/maktabt.jpg',
+                link: 'https://www.maktabt.com/'
+            },
+            {
+                title: 'ArropaTuCasa',
+                subtitle: 'منصة العزل الحراري وتوفير الطاقة',
+                description: 'منصة رقمية متطورة للعزل الحراري في إسبانيا، تتضمن حاسبة تفاعلية لتوفير الطاقة ومحاكاة فورية مع إدارة منح الدعم الحكومي الرسمي CAE 2026.',
+                image: '/projects/arropatucasa.jpg',
+                link: 'https://www.arropatucasa.es/'
             },
             {
                 title: 'Enrgestion',
@@ -71,20 +85,6 @@ export const ar = {
                 description: 'منصة شاملة لإدارة وتحسين موارد الطاقة. تتميز بلوحة تحكم بديهية مع عرض البيانات في الوقت الفعلي.',
                 image: '/projects/enrgestion.jpg',
                 link: 'https://enrgestion.vercel.app/'
-            },
-            {
-                title: 'LaEcoVida Admin',
-                subtitle: 'لوحة التحكم الإدارية',
-                description: 'المركز الرئيسي لإدارة المخزون وعروض الأسعار وتفاعلات العملاء لـ LaEcoVida. مبنية مع التركيز على الأمان وسرعة سير العمل.',
-                image: '/projects/admin.jpg',
-                link: 'https://adminmechauffer.vercel.app/'
-            },
-            {
-                title: 'LaEcoVida Boutique',
-                subtitle: 'متجر إلكتروني متخصص',
-                description: 'مساحة تجارة إلكترونية مخصصة للشراء المباشر لمنتجات LaEcoVida الحرارية، مع مسار شراء سلس وتجربة مستخدم ممتازة.',
-                image: '/projects/boutique.jpg',
-                link: 'https://merechauffer-ddc.vercel.app/boutique'
             }
         ],
     },
@@ -143,6 +143,9 @@ export const ar = {
         footnote: "معلوماتك آمنة معي. لا يوجد بريد مزعج أبداً.",
         successTitle: "تم إرسال الرسالة!",
         successSub: "شكراً لتواصلك. سأرد عليك خلال 24 ساعة.",
+        errorTitle: "فشل الإرسال",
+        errorSub: "حدث خطأ أثناء إرسال رسالتك. يرجى المحاولة مرة أخرى أو مراسلتي عبر البريد الإلكتروني.",
+        tryAgain: "إعادة المحاولة",
     },
 
     footer: {

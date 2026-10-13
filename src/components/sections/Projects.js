@@ -471,29 +471,50 @@ export default function Projects() {
         const mainMoveDuration = 0.95;
         const segment = mainMoveDuration / Math.max(1, numSlides - 1);
 
+        // Pre-initialize ALL project screenshots strictly to the top (50% 0%)
+        slides.forEach((slide) => {
+          const imgEl = slide.querySelector('.parallax-bg img') || slide.querySelector('.parallax-bg');
+          if (imgEl) {
+            gsap.set(imgEl, { objectPosition: "50% 0%" });
+          }
+        });
+
         slides.forEach((slide, i) => {
           // next/image renders an <img> inside the .parallax-bg wrapper div.
           // We target the img element directly so objectPosition animation works.
           const imgEl = slide.querySelector('.parallax-bg img') || slide.querySelector('.parallax-bg');
           if (imgEl) {
-            // Calculate strictly when this specific slide is panning through the viewport
-            let startT = 0.05 + (i - 1) * segment;
-            let dur = 2 * segment;
-            
+            // Strictly timing the parallax scrub so each image ONLY scrolls when
+            // that specific project enters and is in the active viewport area.
+            // Before startT, fromTo guarantees the image stays locked at the top (50% 0%).
+            let startT;
+            let dur;
+
             if (i === 0) {
-              startT = 0; // Starts animating immediately during the 5% delay
-              dur = 0.05 + segment; 
+              startT = 0; // Starts from 0 while slide 0 is in focus
+              dur = segment * 0.7; // Finishes before slide 1 enters
             } else if (i === numSlides - 1) {
-              startT = 0.05 + (i - 1) * segment;
-              dur = segment;
+              // Last slide: starts as it enters viewport and finishes as section completes
+              startT = 0.05 + (i - 0.6) * segment;
+              dur = Math.max(0.1, 1.0 - startT);
+            } else {
+              // Middle slides: start as the slide approaches viewport center,
+              // ensuring user sees the top (hero/navbar) as it appears
+              startT = 0.05 + (i - 0.35) * segment;
+              dur = segment * 0.7;
             }
 
             // Scroll the tall screenshot downwards independently
-            tl.to(imgEl, {
-              objectPosition: "50% 100%", 
-              ease: "none",
-              duration: dur
-            }, Math.max(0, startT));
+            tl.fromTo(imgEl,
+              { objectPosition: "50% 0%" },
+              {
+                objectPosition: "50% 100%", 
+                ease: "none",
+                duration: dur,
+                immediateRender: false,
+              },
+              startT
+            );
           }
 
           const titles = slide.querySelectorAll('.title-parallax');
@@ -637,8 +658,8 @@ export default function Projects() {
                         fill
                         sizes="(max-width: 768px) 80vw, 45vw"
                         style={{ objectFit: 'cover', objectPosition: 'top' }}
-                        priority={index === 0}
-                        quality={80}
+                        priority={true}
+                        unoptimized={true}
                       />
                     </ProjectImageWrapper>
                     <ProjectInfo>

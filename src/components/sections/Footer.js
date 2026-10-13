@@ -150,8 +150,8 @@ const FooterBody = styled.div`
 const FooterInner = styled.div`
   max-width: 1280px; margin: 0 auto; padding: 4rem 2rem 0;
   display: grid;
-  grid-template-columns: 2.2fr 1fr 1fr 1.2fr;
-  gap: 3rem;
+  grid-template-columns: 1.8fr 1fr 1fr 1.4fr;
+  gap: 2.5rem;
   @media (max-width: 1024px) { grid-template-columns: 1fr 1fr; }
   @media (max-width: 600px) { grid-template-columns: 1fr; }
 `;
@@ -222,37 +222,53 @@ const ColLink = styled.a`
 const StatusCard = styled.div`
   background: ${({ theme }) => theme.colors.bgSecondary};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 16px; padding: 1.5rem;
+  border-radius: 16px; padding: 1.25rem;
   height: fit-content;
+  min-width: 0;
 `;
 
 const StatusTitle = styled.div`
   font-size: 0.8rem; font-weight: 700;
   letter-spacing: 0.12em; text-transform: uppercase;
   color: ${({ theme }) => theme.colors.text};
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
 `;
 
 const StatusBadge = styled.div`
   display: flex; align-items: center; gap: 0.5rem;
   font-size: 0.8rem; color: #10b981;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
+  white-space: nowrap;
 `;
 
 const GreenDot = styled.span`
   width: 7px; height: 7px; border-radius: 50%; background: #10b981;
   animation: ${pulse} 2s ease-in-out infinite;
+  flex-shrink: 0;
 `;
 
 const EmailRow = styled.div`
-  display: flex; align-items: center; gap: 0.4rem;
-  font-size: 0.8rem; color: ${({ theme }) => theme.colors.textMuted};
-  padding: 0.6rem 0.75rem;
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.78rem; color: ${({ theme }) => theme.colors.textMuted};
+  padding: 0.55rem 0.65rem;
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.bg};
-  margin-bottom: 1rem;
-  word-break: break-all;
+  margin-bottom: 0.85rem;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: all 0.2s ease;
+
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accent};
+  }
 `;
 
 const StatusBtn = styled.a`
@@ -384,7 +400,10 @@ export default function Footer() {
           <StatusCard>
             <StatusTitle>{t('footer.statusTitle') || 'Current Status'}</StatusTitle>
             <StatusBadge><GreenDot /> {t('contact.availableStatus') || 'Available for freelance'}</StatusBadge>
-            <EmailRow><FiMail size={12} /> mehdi@example.com</EmailRow>
+            <EmailRow as="a" href="mailto:mbekkous2@gmail.com" title="mbekkous2@gmail.com">
+              <FiMail size={13} style={{ flexShrink: 0 }} />
+              <span>mbekkous2@gmail.com</span>
+            </EmailRow>
             <StatusBtn href="#contact" onClick={e => { e.preventDefault(); handleClick('contact'); }}>
               {t('nav.letsTalk')} →
             </StatusBtn>

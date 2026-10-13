@@ -14,11 +14,15 @@
     "canvas": "^3.2.1",
     "gsap": "^3.12.7",
     "next": "^15.2.3",
+    "nodemailer": "^10.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
     "sharp": "^0.34.5",
     "styled-components": "^6.1.15",
     "three": "^0.174.0"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.13.0"
   }
 }

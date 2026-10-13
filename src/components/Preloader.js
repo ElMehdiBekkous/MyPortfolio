@@ -156,6 +156,18 @@ export default function Preloader() {
   const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
+    // Preload project images into browser memory during intro animation
+    const projectImages = [
+      '/projects/laecovida_v2.jpg',
+      '/projects/maktabt.jpg',
+      '/projects/arropatucasa.jpg',
+      '/projects/enrgestion.jpg'
+    ];
+    projectImages.forEach((src) => {
+      const img = new window.Image();
+      img.src = src;
+    });
+
     // Check if it's Lighthouse / Googlebot scoring the page. If so, immediately bypass.
     const isBot = /bot|googlebot|crawler|spider|robot|crawling|lighthouse/i.test(navigator.userAgent);
     if (isBot) {
