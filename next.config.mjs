@@ -13,6 +13,22 @@ const nextConfig = {
     // Allow local /public images to be optimized by next/image
     remotePatterns: [],
   },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/:path*',
+          has: [
+            {
+              type: 'host',
+              value: '^antadis\\..*',
+            },
+          ],
+          destination: '/antadis/:path*',
+        },
+      ],
+    };
+  },
 };
 
 export default nextConfig;
