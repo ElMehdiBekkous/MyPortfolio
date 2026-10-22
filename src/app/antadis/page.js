@@ -1,20 +1,10 @@
-'use client';
-
-import dynamic from 'next/dynamic';
-
-const AntadisShowroom = dynamic(
-  () => import('@/components/antadis/AntadisShowroom'),
-  {
-    ssr: false,
-    loading: () => null,
-  }
-);
+import ClientShowroom from '@/components/antadis/ClientShowroom';
 
 export default function AntadisPage() {
   return (
     <>
-      {/* 3D Interactive WebGL Showroom Canvas and HUD */}
-      <AntadisShowroom />
+      {/* 3D Interactive WebGL Showroom Canvas and HUD (Client Component with ssr: false) */}
+      <ClientShowroom />
 
       {/* Semantic Content Structure for Search Engine Bots, Screen Readers and AI Crawlers */}
       <main

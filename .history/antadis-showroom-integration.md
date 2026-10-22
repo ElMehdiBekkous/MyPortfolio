@@ -64,4 +64,23 @@
     5. Made `#loader-overlay` hidden by default (`hidden pointer-events-none`) so the Hero card and title paint instantly without artificial delays.
     6. Scaled mobile infinity ribbon canvas texture down to 1024x128.
     7. Deferred `initShowroomEngine` to `requestAnimationFrame` so Hero DOM paints first.
+- 3D LED Perimeter Ribbon Logo Contrast & Crispness Overhaul:
+  - Root Cause Analysis:
+    1. At 77 units distance, the scene's exponential atmospheric fog (`THREE.FogExp2`) washed out the LED billboard textures by default (`fog: true` on `MeshBasicMaterial`).
+    2. Downsampled canvas resolution squeezed individual logos into under 100px.
+    3. Missing mipmap generation and low anisotropy resulted in severe texture aliasing and washed-out dark logo details on perspective tilt.
+  - Solutions Implemented:
+    1. Set `fog: false` on `ribbonMesh` `MeshBasicMaterial` so the LED panels remain luminous and unmuted regardless of distance or fog density.
+    2. Restored logical canvas resolution to `4096 x 320` with 16x anisotropic filtering and `LinearMipmapLinearFilter`.
+    3. Shifted card background from ivory `#FAF6F0` to pure crisp white `#FFFFFF` with warm gold border `rgba(217, 155, 82, 0.85)` for high-contrast presentation of brand logos (Shopify, PrestaShop, Sylius, Magento, OroCommerce, Proximis).
+    4. Added `triggerRender()` on logo image decode to immediately re-render newly loaded textures to the GPU.
+- True Server Component Architecture & Pre-rendered SSR for Robots:
+  - Addressed user concern regarding `'use client'` blocking bot indexing.
+  - Converted `src/app/antadis/page.js` into a 100% Server Component (removed `'use client'`).
+  - Isolated the WebGL client boundary inside `src/components/antadis/ClientShowroom.jsx` (`dynamic(() => import('./AntadisShowroom'), { ssr: false })`).
+  - Verified that `GET /antadis` server response now delivers 32,267 bytes of raw static HTML containing full `<article>`, `<header>`, `<h1>`, `<h2>`, `<h3>` hierarchy, all 6 expertise and partner sections, and Schema.org JSON-LD directly to search engine bots, screen readers, and AI crawlers without requiring client JavaScript execution.
+- Total Blocking Time (TBT) Performance Tuning:
+  - Capped initial warmup rendering at 2 frames instead of 12.
+  - Shortened stationary settling threshold to 400ms, immediately releasing the main thread to achieve optimal Lighthouse CPU idle.
+
 

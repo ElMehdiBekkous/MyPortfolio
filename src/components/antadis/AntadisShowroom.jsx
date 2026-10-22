@@ -722,8 +722,8 @@ function initShowroomEngine(THREE, gsap) {
       // ===================================================================
       function createInfinityRibbonTexture(itemsRow, accentHex) {
         const cv = document.createElement('canvas');
-        const logicalW = state.isMobile ? 1024 : 2048;
-        const logicalH = state.isMobile ? 128 : 256;
+        const logicalW = 4096;
+        const logicalH = 320;
         const rScale = 1.0;
         cv.width = logicalW;
         cv.height = logicalH;
@@ -735,12 +735,13 @@ function initShowroomEngine(THREE, gsap) {
         const tex = new THREE.CanvasTexture(cv);
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.ClampToEdgeWrapping;
-        tex.minFilter = THREE.LinearFilter;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
         tex.magFilter = THREE.LinearFilter;
+        tex.generateMipmaps = true;
         // Show ~5.2 pure logo cards across the compact stadium LED board at once
         tex.repeat.set(0.45, 1);
         if (renderer.capabilities && renderer.capabilities.getMaxAnisotropy) {
-          tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+          tex.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy());
         }
 
         let rafPending = false;
@@ -750,6 +751,7 @@ function initShowroomEngine(THREE, gsap) {
           requestAnimationFrame(() => {
             rafPending = false;
             renderStrip();
+            if (typeof triggerRender === 'function') triggerRender();
           });
         }
 
@@ -762,37 +764,37 @@ function initShowroomEngine(THREE, gsap) {
           ctx.fillStyle = '#0b1120';
           ctx.fillRect(0, 0, logicalW, logicalH);
 
-          // Subtle top & bottom LED border line
+          // Vibrant top & bottom LED border line
           ctx.fillStyle = accentHex;
-          ctx.fillRect(0, 0, logicalW, 5);
-          ctx.fillRect(0, logicalH - 5, logicalW, 5);
+          ctx.fillRect(0, 0, logicalW, 6);
+          ctx.fillRect(0, logicalH - 6, logicalW, 6);
 
           itemsRow.forEach((item, idx) => {
             const x0 = idx * slotW;
-            const padX = 16;
-            const padY = 18;
+            const padX = 14;
+            const padY = 16;
             const boxX = x0 + padX;
             const boxY = padY;
             const boxW = slotW - padX * 2;
             const boxH = logicalH - padY * 2;
 
-            // Pure Ivory Logo Card (#FAF6F0) exactly like .antadis-logo-chip — NO extra text!
-            ctx.fillStyle = '#FAF6F0';
+            // Pure Crisp White Logo Card (#FFFFFF) with high contrast for razor sharp brand logos
+            ctx.fillStyle = '#FFFFFF';
             ctx.beginPath();
             if (ctx.roundRect) {
-              ctx.roundRect(boxX, boxY, boxW, boxH, 22);
+              ctx.roundRect(boxX, boxY, boxW, boxH, 24);
             } else {
               ctx.rect(boxX, boxY, boxW, boxH);
             }
             ctx.fill();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = 'rgba(217, 155, 82, 0.65)';
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(217, 155, 82, 0.85)';
             ctx.stroke();
 
             const img = loadedImages[idx];
             if (img) {
-              const innerPadX = 20;
-              const innerPadY = 18;
+              const innerPadX = 16;
+              const innerPadY = 14;
               const maxW = boxW - innerPadX * 2;
               const maxH = boxH - innerPadY * 2;
               const iw = img.naturalWidth || img.width || 220;
@@ -883,6 +885,7 @@ function initShowroomEngine(THREE, gsap) {
           ribbonGeo,
           new THREE.MeshBasicMaterial({
             map: singleRowTex,
+            fog: false,
             polygonOffset: true,
             polygonOffsetFactor: -2,
             polygonOffsetUnits: -2
@@ -3169,19 +3172,23 @@ function initShowroomEngine(THREE, gsap) {
           return;
         }
 
-        // Guarantee 12 warmup frames on load so full scene & shaders are compiled and painted
-        if (renderedWarmupFrames < 12) {
+        // On initial load, 2 warmup frames ensure full scene & shaders are compiled and painted
+        if (renderedWarmupFrames < 2) {
           renderedWarmupFrames++;
-          lastInteractionTime = performance.now();
-        } else if (performance.now() - lastInteractionTime > 2500) {
-          // If no user input for 2.5s and camera settled, sleep render loop to free CPU & battery
-          const camSettled = currentCamPos.distanceToSquared(targetCamPos) < 0.0001 &&
-                             currentLookAt.distanceToSquared(targetLookAt) < 0.0001 &&
-                             Math.abs(state.scrollProgress - state.dampedProgress) < 0.0001;
-          if (camSettled) {
-            isInteracting = false;
-            return;
-          }
+          renderer.render(scene, camera);
+          animFrameId = requestAnimationFrame(animate);
+          return;
+        }
+
+        // Check if camera and smooth scroll have fully settled at target
+        const camSettled = currentCamPos.distanceToSquared(targetCamPos) < 0.0001 &&
+                           currentLookAt.distanceToSquared(targetLookAt) < 0.0001 &&
+                           Math.abs(state.scrollProgress - state.dampedProgress) < 0.0001;
+
+        // If stationary and no active interaction in the last 400ms, pause loop to allow CPU idle & save battery
+        if (camSettled && (performance.now() - lastInteractionTime > 400)) {
+          isInteracting = false;
+          return;
         }
 
         animFrameId = requestAnimationFrame(animate);
