@@ -47,6 +47,10 @@ export default function Home() {
 
     return (
         <>
+            <link rel="preload" as="image" href="/projects/laecovida_v2.jpg" />
+            <link rel="preload" as="image" href="/projects/maktabt.jpg" />
+            <link rel="preload" as="image" href="/projects/arropatucasa.jpg" />
+            <link rel="preload" as="image" href="/projects/enrgestion.jpg" />
             <Preloader />
             <PreferencesPopup />
             <ScrollProgress />

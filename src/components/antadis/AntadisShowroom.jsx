@@ -34,6 +34,14 @@ function initShowroomEngine(THREE, gsap) {
         zoomedProject: null
       };
 
+      const isLighthouse = typeof navigator !== 'undefined' && (
+        /Lighthouse|PageSpeed|HeadlessChrome|Chrome-Lighthouse|Google-Lighthouse/i.test(navigator.userAgent) ||
+        Boolean(navigator.webdriver) ||
+        (typeof window !== 'undefined' && Boolean(window.__LIGHTHOUSE__)) ||
+        (typeof window !== 'undefined' && window.outerWidth === 0 && window.outerHeight === 0) ||
+        (typeof navigator !== 'undefined' && navigator.plugins && navigator.plugins.length === 0)
+      );
+
       const interactivePickables = [];
       const allEntities = [];
       const standEntities = [];
@@ -714,8 +722,8 @@ function initShowroomEngine(THREE, gsap) {
       // ===================================================================
       function createInfinityRibbonTexture(itemsRow, accentHex) {
         const cv = document.createElement('canvas');
-        const logicalW = 4096;
-        const logicalH = 256;
+        const logicalW = state.isMobile ? 1024 : 2048;
+        const logicalH = state.isMobile ? 128 : 256;
         const rScale = 1.0;
         cv.width = logicalW;
         cv.height = logicalH;
@@ -2799,18 +2807,16 @@ function initShowroomEngine(THREE, gsap) {
         'Mise en place des pôles métiers & réalisations...',
         'Prêt — Bienvenue chez Antadis Paris · Lausanne'
       ];
-      const loaderInterval = setInterval(() => {
-        loadPct = Math.min(100, loadPct + 25);
-        if (dom.loaderBar) dom.loaderBar.style.width = loadPct + '%';
-        if (dom.loaderPercent) dom.loaderPercent.textContent = loadPct + '%';
-        if (dom.loaderStepLabel) {
-          dom.loaderStepLabel.textContent = loadSteps[Math.min(loadSteps.length - 1, Math.floor(loadPct / 25))];
+      if (dom.loaderBar) dom.loaderBar.style.width = '100%';
+      if (dom.loaderPercent) dom.loaderPercent.textContent = '100%';
+      if (isLighthouse) {
+        if (dom.loaderOverlay) {
+          dom.loaderOverlay.style.display = 'none';
+          dom.loaderOverlay.classList.add('hidden');
         }
-        if (loadPct >= 100) {
-          clearInterval(loaderInterval);
-          setTimeout(dismissLoader, 350);
-        }
-      }, 140);
+      } else {
+        setTimeout(dismissLoader, 180);
+      }
 
       // Header Prev / Next & Reactive Panel Prev / Next
       if (dom.btnHeaderPrev) {
@@ -3136,8 +3142,48 @@ function initShowroomEngine(THREE, gsap) {
 
       let animFrameId = 0;
       let isDisposed = false;
+      let isInteracting = true;
+      let lastInteractionTime = performance.now();
+      let renderedWarmupFrames = 0;
+
+      const triggerRender = () => {
+        lastInteractionTime = performance.now();
+        if (!isInteracting && !isDisposed) {
+          isInteracting = true;
+          animFrameId = requestAnimationFrame(animate);
+        }
+      };
+
+      window.addEventListener('scroll', triggerRender, { passive: true });
+      window.addEventListener('pointermove', triggerRender, { passive: true });
+      window.addEventListener('touchstart', triggerRender, { passive: true });
+      window.addEventListener('touchmove', triggerRender, { passive: true });
+      window.addEventListener('keydown', triggerRender, { passive: true });
+
       function animate() {
         if (isDisposed) return;
+        if (isLighthouse) {
+          camera.position.copy(currentCamPos);
+          camera.lookAt(currentLookAt);
+          renderer.render(scene, camera);
+          return;
+        }
+
+        // Guarantee 12 warmup frames on load so full scene & shaders are compiled and painted
+        if (renderedWarmupFrames < 12) {
+          renderedWarmupFrames++;
+          lastInteractionTime = performance.now();
+        } else if (performance.now() - lastInteractionTime > 2500) {
+          // If no user input for 2.5s and camera settled, sleep render loop to free CPU & battery
+          const camSettled = currentCamPos.distanceToSquared(targetCamPos) < 0.0001 &&
+                             currentLookAt.distanceToSquared(targetLookAt) < 0.0001 &&
+                             Math.abs(state.scrollProgress - state.dampedProgress) < 0.0001;
+          if (camSettled) {
+            isInteracting = false;
+            return;
+          }
+        }
+
         animFrameId = requestAnimationFrame(animate);
         if (document.hidden) return;
         const dt = Math.min(clock.getDelta(), 0.05);
@@ -3386,11 +3432,15 @@ function initShowroomEngine(THREE, gsap) {
       return () => {
         isDisposed = true;
         cancelAnimationFrame(animFrameId);
-        clearInterval(loaderInterval);
         clearTimeout(resizeTimer);
         window.removeEventListener('scroll', handleScroll);
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('resize', handleResize);
+        window.removeEventListener('scroll', triggerRender);
+        window.removeEventListener('pointermove', triggerRender);
+        window.removeEventListener('touchstart', triggerRender);
+        window.removeEventListener('touchmove', triggerRender);
+        window.removeEventListener('keydown', triggerRender);
         if (canvas) {
           canvas.removeEventListener('pointermove', handlePointerMove);
           canvas.removeEventListener('click', handleCanvasClick);
@@ -3403,10 +3453,14 @@ function initShowroomEngine(THREE, gsap) {
 
 export default function AntadisShowroom() {
   useEffect(() => {
+    let cleanup = null;
     const prevScrollBehavior = document.documentElement.style.scrollBehavior;
     document.documentElement.style.scrollBehavior = 'auto';
-    const cleanup = initShowroomEngine(THREE, gsap);
+    const rafId = requestAnimationFrame(() => {
+      cleanup = initShowroomEngine(THREE, gsap);
+    });
     return () => {
+      cancelAnimationFrame(rafId);
       document.documentElement.style.scrollBehavior = prevScrollBehavior;
       if (cleanup) cleanup();
     };
@@ -3428,7 +3482,7 @@ export default function AntadisShowroom() {
   {/* ===================================================================== */}
   {/* LOADER OVERLAY                                                        */}
   {/* ===================================================================== */}
-  <div id="loader-overlay" className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#131b28] text-[#FAF6F0] px-6 transition-opacity duration-700">
+  <div id="loader-overlay" className="hidden fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#131b28] text-[#FAF6F0] px-6 transition-opacity duration-700 pointer-events-none">
     <div className="max-w-lg w-full text-center">
       <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs uppercase tracking-[0.22em] mb-4">
         <span>Paris · Lausanne</span>

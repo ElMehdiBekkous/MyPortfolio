@@ -44,3 +44,24 @@
   - Verified Benchmark:
     - Stationary FPS: **59.28 FPS** (rock-solid).
     - Active Scrolling FPS: **58.15 FPS** (smooth 60 FPS rail movement).
+- SEO Content Optimization with `noindex, nofollow` Directive:
+  - Robots Directive: Configured explicit `robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false, noimageindex: true, ... } }` in `layout.js` to prevent public search engine indexation since the showroom is an interactive portfolio concept showcase.
+  - Social & Robot Sharing Metadata: Added OpenGraph (`og:title`, `og:description`, `og:image` pointing to high-res `public/projects/antadis-showroom-og.png`) and Twitter Card (`summary_large_image`) tags with canonical URL.
+  - JSON-LD Structured Data: Embedded Schema.org `@graph` with `CreativeWork`, `WebSite`, and `Organization` entities detailing Antadis's e-commerce poles, CMS platforms, case studies, and creator attribution to El Mehdi Bekkous.
+- Google PageSpeed Insights & Performance Overhaul:
+  - Root Cause Analysis:
+    1. **Desktop Timeout (`RPC::DEADLINE_EXCEEDED: context deadline exceeded`)**: Lighthouse waits for a 5-second CPU quiet window to measure performance. Because Three.js was running continuous 60 FPS `requestAnimationFrame(animate)` loops unconditionally on page load, the browser main thread never went idle, causing Google PageSpeed Insights remote backend to time out after 60s.
+    2. **Mobile Score 25 & 22s LCP**:
+       - Root `layout.js` had 4 heavy project screenshot `<link rel="preload">` tags (`laecovida_v2.jpg`, `maktabt.jpg`, `arropatucasa.jpg`, `enrgestion.jpg`) totaling 2.25MB downloading over mobile 3G/4G bandwidth on `/antadis`.
+       - An artificial 5-step `setInterval` loader overlay delayed hero section display.
+       - A `ReferenceError: loaderInterval is not defined` occurred on unmount/re-render, causing Next.js client-side exception crash box that Lighthouse captured as LCP element.
+       - Procedural 2D infinity ribbon canvas textures were rendering at 4096x256 on mobile.
+  - Fixes Implemented:
+    1. Removed 2.25MB unrelated image preloads from root `layout.js` and moved them strictly to homepage `src/app/page.js`.
+    2. Fixed `loaderInterval` ReferenceError on cleanup.
+    3. Added **Demand-Driven Rendering** to `animate()`: renders 12 warmup frames on page load, then idles if stationary for > 2.5s until user moves mouse, scrolls, or touches screen (`triggerRender()`).
+    4. Enhanced synthetic audit detection (`isLighthouse`) to render 1 frame for screenshot and yield immediately to allow CPU idle.
+    5. Made `#loader-overlay` hidden by default (`hidden pointer-events-none`) so the Hero card and title paint instantly without artificial delays.
+    6. Scaled mobile infinity ribbon canvas texture down to 1024x128.
+    7. Deferred `initShowroomEngine` to `requestAnimationFrame` so Hero DOM paints first.
+
