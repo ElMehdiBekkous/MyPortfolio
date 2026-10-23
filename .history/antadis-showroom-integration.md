@@ -82,5 +82,26 @@
 - Total Blocking Time (TBT) Performance Tuning:
   - Capped initial warmup rendering at 2 frames instead of 12.
   - Shortened stationary settling threshold to 400ms, immediately releasing the main thread to achieve optimal Lighthouse CPU idle.
+- Light/Dark Mode Transition Lag & Stutter Elimination:
+  - Root Cause Analysis:
+    1. Demand-driven render loop halted rendering after 400ms (`camSettled && performance.now() - lastInteractionTime > 400`), freezing the 3D canvas mid-transition while GSAP was still animating celestial bodies over 2.4s. When user moved mouse, the engine suddenly woke up and attempted to catch up 2 seconds of light/sky/fog changes in a single frame.
+    2. Eiffel Tower dark-mode meshes (`eiffelShell`, `eiffelHalo`, and custom `ShaderMaterial` `eiffelSparkles`) were hidden with `visible = false` on initial load. When toggling dark mode, the GPU was forced to compile their shaders synchronously mid-animation, causing a 300-600ms main-thread stall.
+    3. `gsap.to` `onUpdate` was mutating `document.body.classList` 60 times/sec, triggering repeated style invalidations across all DOM elements.
+  - Solutions Implemented:
+    1. Added `isThemeTransitioning` check to the stationary loop condition, ensuring 60 FPS continuous rendering until `themeState.progress` reaches its target.
+    2. Hooked `triggerRender()` into `btnTheme` click and GSAP updates, waking up the engine immediately.
+    3. Added `renderer.compile(scene, camera)` on initial warmup frame and kept night meshes visible with 0 opacity, pre-compiling all vertex/fragment shaders into VRAM.
+    4. Shortened transition duration from 2.4s to a responsive 0.85s with `power2.out`.
+    5. Debounced `classList` toggling so DOM classes only mutate once when crossing the 0.48 threshold.
+- Continuous 60 FPS Ambient Animation & UX Restoration:
+  - Fully removed the artificial 400ms idle freeze: restored continuous `requestAnimationFrame` loop so ambient elements (fountain water droplets, rotating Eiffel beacon, sparkling stars, velvet ropes, mouse parallax) stay organically alive without abrupt freezes.
+  - Removed redundant global window listeners (`scroll`, `pointermove`, `touchmove`) to eliminate idle CPU thrashing.
+- Footer Fevad Badge Desktop Visibility & Station Navigation Arrows Symmetry:
+  - Root Cause Analysis:
+    1. In the footer, the Fevad badge used `<span className="hidden sm:inline">✓ Membre Fevad depuis 2018</span>`. Because `.hidden` had `display: none !important` in `antadis.css`, it overrode `.sm:inline`, leaving the badge text empty and invisible on desktop screens.
+    2. The station navigation buttons (`#btn-prev-station` and `#btn-next-station`) used raw text unicode characters (`←` vs `→`), which font renderers displayed with unequal glyph bounding boxes and asymmetric optical sizes.
+  - Solutions Implemented:
+    1. Replaced the nested conflicting `hidden`/`sm:hidden` spans in `.footer-badge-fevad` with a clean `shrink-0` badge containing an explicit emerald checkmark and label, accompanied by high-contrast CSS rules in both light and dark mode.
+    2. Replaced the unicode arrow text with identical 14x14px SVG stroke polyline icons, ensuring both navigation arrows have 100% symmetric and matched visual weight across all browsers.
 
 

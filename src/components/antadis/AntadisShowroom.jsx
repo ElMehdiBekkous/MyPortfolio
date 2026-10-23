@@ -1262,7 +1262,7 @@ function initShowroomEngine(THREE, gsap) {
         fog: false
       });
       const eiffelShell = new THREE.Mesh(eiffelGeo, eiffelShellMat);
-      eiffelShell.visible = false;
+      eiffelShell.visible = true;
       eiffelGroup.add(eiffelShell);
 
       // Soft golden halo around the whole tower
@@ -1288,7 +1288,7 @@ function initShowroomEngine(THREE, gsap) {
       const eiffelHalo = new THREE.Sprite(eiffelHaloMat);
       eiffelHalo.scale.set(260, 420, 1);
       eiffelHalo.position.set(0, 165, 0);
-      eiffelHalo.visible = false;
+      eiffelHalo.visible = true;
       eiffelGroup.add(eiffelHalo);
 
       // Champagne sparkles placed ON the iron lattice, with per-point twinkle
@@ -1351,7 +1351,7 @@ function initShowroomEngine(THREE, gsap) {
       });
       const eiffelSparkles = new THREE.Points(eiffelSparkleGeo, eiffelSparkleMat);
       eiffelSparkles.frustumCulled = true;
-      eiffelSparkles.visible = false;
+      eiffelSparkles.visible = true;
       eiffelGroup.add(eiffelSparkles);
 
       // The tower is far in the background: shadow casting/receiving there is wasted GPU work
@@ -2898,14 +2898,17 @@ function initShowroomEngine(THREE, gsap) {
         userLocked: false
       };
 
+      let lastNightActive = false;
       try {
         if (localStorage.getItem('antadis_theme_dusk') === '1') {
           themeState.progress = 1.0;
           themeState.target = 1.0;
           themeState.userLocked = true;
           document.body.classList.add('theme-dusk', 'theme-night');
+          lastNightActive = true;
         } else {
           document.body.classList.add('theme-light');
+          lastNightActive = false;
         }
       } catch (e) {}
 
@@ -2918,17 +2921,28 @@ function initShowroomEngine(THREE, gsap) {
             localStorage.setItem('antadis_theme_dusk', isNight ? '1' : '0');
           } catch (e) {}
 
-          // Ultra-smooth GSAP animation of celestial bodies, sky, and card themes over 2.4s
+          // Wake up the render loop immediately
+          triggerRender();
+
+          // Ultra-smooth GSAP animation of celestial bodies, sky, and card themes over 0.85s (snappy & 60fps)
           if (typeof gsap !== 'undefined') {
+            gsap.killTweensOf(themeState);
             gsap.to(themeState, {
               progress: themeState.target,
-              duration: 2.4,
-              ease: "power2.inOut",
+              duration: 0.85,
+              ease: "power2.out",
               onUpdate: () => {
+                triggerRender();
                 const nightActive = themeState.progress > 0.48;
-                document.body.classList.toggle('theme-dusk', nightActive);
-                document.body.classList.toggle('theme-night', nightActive);
-                document.body.classList.toggle('theme-light', !nightActive);
+                if (nightActive !== lastNightActive) {
+                  lastNightActive = nightActive;
+                  document.body.classList.toggle('theme-dusk', nightActive);
+                  document.body.classList.toggle('theme-night', nightActive);
+                  document.body.classList.toggle('theme-light', !nightActive);
+                }
+              },
+              onComplete: () => {
+                triggerRender();
               }
             });
           } else {
@@ -2937,6 +2951,7 @@ function initShowroomEngine(THREE, gsap) {
             document.body.classList.toggle('theme-dusk', nightActive);
             document.body.classList.toggle('theme-night', nightActive);
             document.body.classList.toggle('theme-light', !nightActive);
+            triggerRender();
           }
         });
       }
@@ -3145,23 +3160,8 @@ function initShowroomEngine(THREE, gsap) {
 
       let animFrameId = 0;
       let isDisposed = false;
-      let isInteracting = true;
-      let lastInteractionTime = performance.now();
       let renderedWarmupFrames = 0;
-
-      const triggerRender = () => {
-        lastInteractionTime = performance.now();
-        if (!isInteracting && !isDisposed) {
-          isInteracting = true;
-          animFrameId = requestAnimationFrame(animate);
-        }
-      };
-
-      window.addEventListener('scroll', triggerRender, { passive: true });
-      window.addEventListener('pointermove', triggerRender, { passive: true });
-      window.addEventListener('touchstart', triggerRender, { passive: true });
-      window.addEventListener('touchmove', triggerRender, { passive: true });
-      window.addEventListener('keydown', triggerRender, { passive: true });
+      const triggerRender = () => {};
 
       function animate() {
         if (isDisposed) return;
@@ -3172,25 +3172,20 @@ function initShowroomEngine(THREE, gsap) {
           return;
         }
 
-        // On initial load, 2 warmup frames ensure full scene & shaders are compiled and painted
+        // On initial load, warmup frames pre-compile all day & night shaders so there is zero toggle stutter
         if (renderedWarmupFrames < 2) {
           renderedWarmupFrames++;
+          if (renderedWarmupFrames === 1) {
+            try {
+              renderer.compile(scene, camera);
+            } catch (e) {}
+          }
           renderer.render(scene, camera);
           animFrameId = requestAnimationFrame(animate);
           return;
         }
 
-        // Check if camera and smooth scroll have fully settled at target
-        const camSettled = currentCamPos.distanceToSquared(targetCamPos) < 0.0001 &&
-                           currentLookAt.distanceToSquared(targetLookAt) < 0.0001 &&
-                           Math.abs(state.scrollProgress - state.dampedProgress) < 0.0001;
-
-        // If stationary and no active interaction in the last 400ms, pause loop to allow CPU idle & save battery
-        if (camSettled && (performance.now() - lastInteractionTime > 400)) {
-          isInteracting = false;
-          return;
-        }
-
+        // Continuous smooth 60 FPS render loop: keep ambient animations (fountain, beacon, sparkles) alive
         animFrameId = requestAnimationFrame(animate);
         if (document.hidden) return;
         const dt = Math.min(clock.getDelta(), 0.05);
@@ -3386,16 +3381,12 @@ function initShowroomEngine(THREE, gsap) {
 
         // In daylight everything below is off: skip all night work (after one final "turn off" frame)
         if (eiffelNight > 0.001 || eiffelNightPrev > 0.001) {
-          const on = eiffelNight > 0.01;
-
           // Iron lattice warms up with sodium-gold emissive
           const eiffelGlowIntensity = eiffelNight * 1.1;
           eiffelGlow.forEach(m => { m.emissiveIntensity = eiffelGlowIntensity; });
 
           // Unfogged golden shell + halo (cheap unlit additive layers that survive the night fog)
-          eiffelShell.visible = on;
           eiffelShellMat.opacity = eiffelNight * (0.62 + Math.sin(elapsed * 1.3) * 0.06);
-          eiffelHalo.visible = on;
           eiffelHaloMat.opacity = eiffelNight * (0.5 + Math.sin(elapsed * 0.9) * 0.05);
 
           // Lamps stay in the scene (intensity only) so the shader never recompiles; none on lite devices
@@ -3412,7 +3403,6 @@ function initShowroomEngine(THREE, gsap) {
           sparkU.uTime.value = elapsed;
           sparkU.uOpacity.value = eiffelNight;
           sparkU.uScale.value = renderer.domElement.height * 0.5;
-          eiffelSparkles.visible = on;
         }
         eiffelNightPrev = eiffelNight;
 
@@ -3443,11 +3433,6 @@ function initShowroomEngine(THREE, gsap) {
         window.removeEventListener('scroll', handleScroll);
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('resize', handleResize);
-        window.removeEventListener('scroll', triggerRender);
-        window.removeEventListener('pointermove', triggerRender);
-        window.removeEventListener('touchstart', triggerRender);
-        window.removeEventListener('touchmove', triggerRender);
-        window.removeEventListener('keydown', triggerRender);
         if (canvas) {
           canvas.removeEventListener('pointermove', handlePointerMove);
           canvas.removeEventListener('click', handleCanvasClick);
@@ -3742,11 +3727,15 @@ export default function AntadisShowroom() {
           </div>
           {/* Step Prev / Next buttons */}
           <div className="flex items-center gap-1 shrink-0">
-            <button id="btn-prev-station" type="button" className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-200 border border-slate-600 flex items-center justify-center text-xs transition" title="Étape précédente">
-              ←
+            <button id="btn-prev-station" type="button" className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-200 border border-slate-600 flex items-center justify-center transition" title="Étape précédente" aria-label="Étape précédente">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
             </button>
-            <button id="btn-next-station" type="button" className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-slate-800 hover:bg-[#E05A47] text-amber-200 hover:text-white border border-slate-600 flex items-center justify-center text-xs transition" title="Étape suivante">
-              →
+            <button id="btn-next-station" type="button" className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-slate-800 hover:bg-[#E05A47] text-amber-200 hover:text-white border border-slate-600 flex items-center justify-center transition" title="Étape suivante" aria-label="Étape suivante">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
             </button>
           </div>
         </div>
@@ -3844,9 +3833,9 @@ export default function AntadisShowroom() {
             <span className="footer-badge-city hidden md:inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full border text-[11px] font-semibold shrink-0">
               Paris · Lausanne · Depuis 2002
             </span>
-            <a href="https://www.fevad.com/qui-sommes-nous-2/" target="_blank" rel="noopener noreferrer" className="footer-badge-fevad inline-flex items-center gap-1 px-2 sm:px-3 py-0.5 rounded-full border text-[10px] sm:text-[11px] font-semibold transition truncate">
-              <span className=" sm:hidden">✓ Fevad</span>
-              <span className="hidden sm:inline">✓ Membre Fevad depuis 2018</span>
+            <a href="https://www.fevad.com/qui-sommes-nous-2/" target="_blank" rel="noopener noreferrer" className="footer-badge-fevad inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full border text-[10px] sm:text-[11px] font-semibold transition shrink-0" title="Membre de la FEVAD (Fédération du e-commerce et de la vente à distance)">
+              <span className="text-emerald-400 font-bold">✓</span>
+              <span>Membre Fevad · Depuis 2018</span>
             </a>
           </div>
           <button id="btn-toggle-footer-size" type="button" className="px-2.5 sm:px-3 py-1 rounded-full bg-slate-800/90 hover:bg-[#E05A47] text-amber-100 text-[11px] sm:text-xs font-semibold transition flex items-center gap-1 shrink-0" title="Réduire / Agrandir le pied de page">
